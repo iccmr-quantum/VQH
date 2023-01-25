@@ -80,7 +80,7 @@ def is_command(cmd):
     
 def CLI(BACKEND):
     global progQuit, comp, last, reset, generated_quasi_dist, comp_events
-    generated_quasi_dist = {}
+    generated_quasi_dist = []
     
     print("here")
     try:
@@ -186,14 +186,14 @@ def CLI(BACKEND):
         elif x[0] == 'runvqe':
             if len(x) == 1:
                 print("running VQE")
-                generated_quasi_dist = vqh.harmonize()
+                generated_quasi_dist = vqh.test_harmonize()
             else:
                 print('Error! Try Again')
 
         elif x[0] == 'stop':
             sc.freeall()
         elif x[0] == 'play':
-            if generated_quasi_dist != {}:
+            if generated_quasi_dist != []:
                 sc.sonify(generated_quasi_dist)
             else:
                 print("Quasi Dists NOT generated!")

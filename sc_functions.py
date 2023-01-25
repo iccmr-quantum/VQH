@@ -2,6 +2,10 @@ from supercollider import Synth, Server
 import numpy as np
 import time
 
+
+global NOTESDICT
+NOTESDICT = {"c":"amp1", "c#":"amp2", "d":"amp3", "d#":"amp4", "e":"amp5", "f":"amp6", "f#":"amp7", "g":"amp8", "g#":"amp9", "a":"amp10", "a#":"amp11", "b":"amp12"}
+
 def note_loudness(qd):
     global server
 
@@ -23,12 +27,28 @@ def note_loudness(qd):
         loudnesses.append(loudness)
         time.sleep(0.2)
 
-def sonify(generated_quasi_dists):
+def note_loudness_multiple(loudnessstream):
+    global server, NOTESDICT
+
+
+    labels = ["amp1", "amp2", "amp3", "amp4", "amp5", "amp6", "amp7", "amp8", "amp9", "amp10", "amp11", "amp12"]
+    loudness = np.zeros(12)
+    args = dict(zip(labels,loudness))
+    synth = Synth(server, "vqe_model1_son1", args)
+
+    for state in loudnessstream:
+        print(state)
+        for k, amp in state.items():
+            synth.set(NOTESDICT[k], amp)
+        time.sleep(0.2)
+
+
+def sonify(loudnessstream):
     
     global server
 
     server = Server()
-    note_loudness(generated_quasi_dists)
+    note_loudness_multiple(loudnessstream)
 
 def freeall():
     global server

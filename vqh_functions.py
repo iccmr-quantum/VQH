@@ -146,7 +146,7 @@ def test_harmonize():
     # specify all possible notes. This is one octave. For more octaves, just add more notes.
     notes = ['c', 'c#', 'd', 'd#', 'e', 'f', 'f#', 'g', 'g#', 'a', 'a#', 'b']
     config = {
-        'reps': 0,
+        'reps': 1,
         'entanglement': 'linear',
         'optimizer_name': 'COBYLA'
     }
@@ -182,8 +182,8 @@ def test_harmonize():
         if (note, note) not in g_major:
             g_major[(note, note)] = 1.
 
-    qubos = [c_major, g_major, f_major]
-    iterations = [3, 3, 3]
+    qubos = [c_major, g_major, f_major, c_major]
+    iterations = [64, 64, 64, 64]
 
     loudnesses = harmonize(qubos, iterations, **config)
     loudness_list_of_dicts = loudnesses_to_list_of_dicts(loudnesses)
