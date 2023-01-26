@@ -1,0 +1,7 @@
+{
+
+    "reps": 1,
+    "entanglement": "linear",
+    "optimizer_name": "COBYLA"
+
+}

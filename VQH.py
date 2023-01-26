@@ -53,7 +53,7 @@ reset = True
 port = ''
 
 #VALID_COMMANDS = ['n', 'next', 'repeat', 'previous', 'reset', 'set', 'play', 'updatecomp', 'runvqe', 'changebackend', 'changehub', 'changegroup', 'changeproject', 'loadaccount', 'q', 'quit']
-VALID_COMMANDS = ['play', 'runvqe', 'q', 'quit', 'stop']
+VALID_COMMANDS = ['play', 'runvqe', 'q', 'quit', 'stop', 'testvqe']
 
 def update_compfile():
 
@@ -183,10 +183,12 @@ def CLI(BACKEND):
             continue
 
 
+        elif x[0] == 'testvqe':
+            generated_quasi_dist = vqh.test_harmonize()
         elif x[0] == 'runvqe':
             if len(x) == 1:
                 print("running VQE")
-                generated_quasi_dist = vqh.test_harmonize()
+                generated_quasi_dist = vqh.run_vqh()
             else:
                 print('Error! Try Again')
 

@@ -6,7 +6,36 @@ from qiskit_optimization import QuadraticProgram
 from qiskit.algorithms.optimizers import COBYLA, NFT, SPSA
 import numpy as np
 import copy
-import copy
+import csv
+import json
+import logging
+
+level = logging.DEBUG
+
+fmt = logging.Formatter('[%(levelname)s]:%(name)s - %(message)s')
+handler = logging.StreamHandler()
+handler.setFormatter(fmt)
+logger = logging.getLogger(__name__)
+logger.setLevel(level)
+logger.addHandler(handler)
+
+
+def build_qubos_from_csv():
+    
+    with open("h_setup.csv", 'r') as hcsv:
+        hsetup = list(csv.reader(hcsv, delimiter=','))
+
+    header = hsetup.pop(0)
+    logger.debug(f'CSV Header: {header}')
+    n_of_ham = int(header[1])
+    n_of_notes = int(header[2])
+    qubos = []
+    for h in range(n_of_ham):
+        notes = hsetup.pop(h*n_of_notes)[1:]
+        qubos.append({(l[0], notes[i]):float(n) for l in hsetup[h*n_of_notes:h*n_of_notes+n_of_notes] for i,n in enumerate(l[1:])})
+    logger.debug(f'QUBOS: {qubos}')
+
+    return qubos
 
 
 def qubo_to_operator(qubo):
@@ -109,6 +138,7 @@ def harmonize(qubos, iterations, **kwargs):
     # loop over qubos
     for count, qubo in enumerate(qubos):
         operator, variables_index = qubo_to_operator(qubo)
+        logger.debug(f'operator: {operator}')
         optimizer = return_optimizer(
             kwargs['optimizer_name'], iterations[count])
         ansatz = EfficientSU2(num_qubits=len(
@@ -140,6 +170,18 @@ def harmonize(qubos, iterations, **kwargs):
         initial_point = result.optimal_point
     return loudnesses
 
+def run_vqh():
+    
+    with open("vqe_conf.json") as cfile:
+        config = json.load(cfile)
+
+    qubos = build_qubos_from_csv()
+    iterations = [64, 64, 64, 64]
+    loudnesses = harmonize(qubos, iterations, **config)
+    loudness_list_of_dicts = loudnesses_to_list_of_dicts(loudnesses)
+    logger.debug(loudness_list_of_dicts)
+
+    return loudness_list_of_dicts
 
 def test_harmonize():
 
@@ -182,13 +224,12 @@ def test_harmonize():
         if (note, note) not in g_major:
             g_major[(note, note)] = 1.
 
+    
     qubos = [c_major, g_major, f_major, c_major]
     iterations = [64, 64, 64, 64]
-
+    logger.debug(qubos)
     loudnesses = harmonize(qubos, iterations, **config)
     loudness_list_of_dicts = loudnesses_to_list_of_dicts(loudnesses)
 
     return loudness_list_of_dicts
-
-
 
