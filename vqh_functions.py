@@ -1,9 +1,11 @@
-from qiskit.algorithms.minimum_eigensolvers import SamplingVQE
+from qiskit.algorithms.minimum_eigensolvers import VQE
 from qiskit.algorithms.optimizers import COBYLA
-from qiskit.primitives import Sampler
+from qiskit.primitives import Estimator, Sampler
 from qiskit.circuit.library import EfficientSU2
 from qiskit_optimization import QuadraticProgram
 from qiskit.algorithms.optimizers import COBYLA, NFT, SPSA
+from qiskit.quantum_info import SparsePauliOp
+from qiskit.opflow.primitive_ops import PauliSumOp
 import numpy as np
 import copy
 import csv
@@ -21,7 +23,7 @@ logger.addHandler(handler)
 
 
 def build_qubos_from_csv():
-    
+
     with open("h_setup.csv", 'r') as hcsv:
         hsetup = list(csv.reader(hcsv, delimiter=','))
 
@@ -32,13 +34,14 @@ def build_qubos_from_csv():
     qubos = []
     for h in range(n_of_ham):
         notes = hsetup.pop(h*n_of_notes)[1:]
-        qubos.append({(l[0], notes[i]):float(n) for l in hsetup[h*n_of_notes:h*n_of_notes+n_of_notes] for i,n in enumerate(l[1:])})
+        qubos.append({(l[0], notes[i]): float(
+            n) for l in hsetup[h*n_of_notes:h*n_of_notes+n_of_notes] for i, n in enumerate(l[1:])})
     logger.debug(f'QUBOS: {qubos}')
 
     return qubos
 
 
-def qubo_to_operator(qubo):
+def qubo_to_operator_quadratic_program(qubo):
     '''Translate qubo of format {(note_1, note_2): coupling, ...} to operator to be used in VQE this yields diagonal Hamiltonians only'''
 
     notes = []
@@ -63,6 +66,79 @@ def qubo_to_operator(qubo):
     return operator, variables_index
 
 
+def qubo_to_operator(qubo, linear_pauli='Z'):
+    '''Translate qubo of format {(note_1, note_2): coupling, ...} to operator to be used in VQE. This function can yield non-diagonal Hamiltonians.'''
+
+   # First, we need to create a dictionary that maps the variables to their index in the operator
+   # We make sure that the qubo is symmetric and that we only have one term for each pair of variables
+    qubo_index = {}
+    variables_index = {}
+    count_index = 0
+    for key, value in qubo.items():
+        if key[0] not in variables_index:
+            variables_index[key[0]] = count_index
+            count_index += 1
+        if key[1] not in variables_index:
+            variables_index[key[1]] = count_index
+            count_index += 1
+        if key[0] == key[1]:
+            i = variables_index[key[0]]
+            qubo_index[(i, i)] = value
+        elif key[0] != key[1]:
+            i = variables_index[key[0]]
+            j = variables_index[key[1]]
+            if (j, i) in qubo_index and qubo_index[(j, i)] != value:
+                raise ValueError(
+                    'QUBO is not symmetric. (i, j) and (j, i) have different values')
+            if (j, i) in qubo_index:
+                logging.info(
+                    'Ignoring term (i, j) because (j, i) is already in qubo')
+            else:
+                qubo_index[(i, j)] = value
+    # Now, we can create the Hamiltonian in terms of pauli strings
+    num_qubits = len(variables_index)
+    paulis = {}
+    const = 0
+    for key, value in qubo_index.items():
+        if key[0] == key[1]:
+            i = key[0]
+            pauli = 'I'*(num_qubits-i-1) + linear_pauli + 'I'*i
+            if pauli in paulis:
+                paulis[pauli] += -2*value
+            else:
+                paulis[pauli] = -2*value
+            const += -2*value
+        elif key[0] != key[1]:
+            i = key[0]
+            j = key[1]
+            if i > j:
+                i, j = j, i
+            pauli = 'I'*(num_qubits-j-1) + 'Z' + \
+                'I'*(j-i-1) + 'Z' + 'I'*i
+            paulis[pauli] = value
+            pauli = 'I'*(num_qubits-i-1) + linear_pauli + 'I'*i
+            if pauli in paulis:
+                paulis[pauli] += -value
+            else:
+                paulis[pauli] = -value
+            pauli = 'I'*(num_qubits-j-1) + linear_pauli + 'I'*j
+            if pauli in paulis:
+                paulis[pauli] += -value
+            else:
+                paulis[pauli] = -value
+            const += -value
+    # pauli_list = [(k, v) for k, v in paulis.items()]
+    # H = PauliSumOp(SparsePauliOp.from_list(pauli_list))
+    # This Hamitonian H is equal to the QUBO Q up to a constant factor and a constant shift that do not impact the optimization
+    # H = 4*Q + const
+    # Q = H/4 - const/4 = operator + offset
+    pauli_list = [(k, v/4) for k, v in paulis.items()]
+    operator = PauliSumOp(SparsePauliOp.from_list(pauli_list))
+    offset = -const/4
+
+    return operator, variables_index
+
+
 def return_optimizer(optimizer_name, maxiter):
     '''Convenience function to return optimizer object'''
 
@@ -76,7 +152,7 @@ def return_optimizer(optimizer_name, maxiter):
     return optimizer
 
 
-def run_sampling_vqe(ansatz, operator, optimizer, initial_point):
+def run_vqe(ansatz, operator, optimizer, initial_point):
     '''Run VQE with given ansatz, operator, optimizer and initial point, store intermediate results for every iteration'''
 
     eval_counts = []
@@ -89,9 +165,9 @@ def run_sampling_vqe(ansatz, operator, optimizer, initial_point):
         parameterss.append(parameters)
         values.append(value)
         metadatas.append(metadata)
-    sampler = Sampler()
-    vqe = SamplingVQE(sampler, ansatz, optimizer, initial_point=initial_point,
-                      callback=store_intermediate_result)
+    estimator = Estimator()
+    vqe = VQE(estimator, ansatz, optimizer, initial_point=initial_point,
+              callback=store_intermediate_result)
     result = vqe.compute_minimum_eigenvalue(operator)
     intermediate_info = {'eval_counts': eval_counts, 'values': values,
                          'parameterss': parameterss, 'metadatas': metadatas}
@@ -147,7 +223,7 @@ def harmonize(qubos, iterations, **kwargs):
             initial_point = np.zeros(ansatz.num_parameters)
         # copy ansatz to avoid VQE changing it
         ansatz_temp = copy.deepcopy(ansatz)
-        result, intermediate_info = run_sampling_vqe(
+        result, intermediate_info = run_vqe(
             ansatz_temp, operator, optimizer, initial_point)
         parameterss = intermediate_info['parameterss']
         quasi_dists = []
@@ -170,8 +246,9 @@ def harmonize(qubos, iterations, **kwargs):
         initial_point = result.optimal_point
     return loudnesses
 
+
 def run_vqh():
-    
+
     with open("vqe_conf.json") as cfile:
         config = json.load(cfile)
 
@@ -182,6 +259,7 @@ def run_vqh():
     logger.debug(loudness_list_of_dicts)
 
     return loudness_list_of_dicts
+
 
 def test_harmonize():
 
@@ -224,7 +302,6 @@ def test_harmonize():
         if (note, note) not in g_major:
             g_major[(note, note)] = 1.
 
-    
     qubos = [c_major, g_major, f_major, c_major]
     iterations = [64, 64, 64, 64]
     logger.debug(qubos)
@@ -232,4 +309,3 @@ def test_harmonize():
     loudness_list_of_dicts = loudnesses_to_list_of_dicts(loudnesses)
 
     return loudness_list_of_dicts
-
