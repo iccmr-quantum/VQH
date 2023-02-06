@@ -11,6 +11,7 @@ import copy
 import csv
 import json
 import logging
+import os
 
 level = logging.DEBUG
 
@@ -22,6 +23,7 @@ logger.setLevel(level)
 logger.addHandler(handler)
 
 
+global PATH
 def build_qubos_from_csv():
 
     with open("h_setup.csv", 'r') as hcsv:
@@ -212,6 +214,9 @@ def loudnesses_to_list_of_dicts(loudnesses):
 def harmonize(qubos, iterations, **kwargs):
     '''Run harmonizer algorithm for list of qubos and list of iterations. VQE is performed for the i-th qubo for i-th number of iterations.'''
     # loop over qubos
+    global PATH
+    QD = []
+    max_state = []
     for count, qubo in enumerate(qubos):
         operator, variables_index = qubo_to_operator(qubo)
         logger.debug(f'operator: {operator}')
@@ -234,6 +239,9 @@ def harmonize(qubos, iterations, **kwargs):
             quasi_dist = intermediate_parameters_to_quasi_dist(
                 ansatz_temp, parameters)
             quasi_dists.append(quasi_dist)
+            max_state.append(max(quasi_dist, key=quasi_dist.get))
+            #logger.debug(f'Max value state: {max(quasi_dist, key=quasi_dist.get)}')
+            QD.append(quasi_dist)
         if count == 0:
             loudnesses = quasi_dists_to_loudness(
                 quasi_dists, variables_index)
@@ -244,19 +252,37 @@ def harmonize(qubos, iterations, **kwargs):
                 loudnesses[key] = np.append(loudnesses[key], value)
         # set initital point for next qubo to be the optimal point of the previous qubo
         initial_point = result.optimal_point
+        
+        os.makedirs(PATH, exist_ok=True)
+
+        with open(f"{PATH}/rawdata.json", 'w') as rawfile:
+            json.dump(QD, rawfile, indent=4)
+        with open(f"{PATH}/max_prob_states.txt", 'w') as maxfile:
+            maxfile.write('\n'.join(max_state))
     return loudnesses
 
 
 def run_vqh():
-
+    global PATH
     with open("vqe_conf.json") as cfile:
         config = json.load(cfile)
 
+    PATH = f"Data/Data_{config['nextpathid']}"
     qubos = build_qubos_from_csv()
     iterations = [64, 64, 64, 64]
     loudnesses = harmonize(qubos, iterations, **config)
     loudness_list_of_dicts = loudnesses_to_list_of_dicts(loudnesses)
-    logger.debug(loudness_list_of_dicts)
+    #logger.debug(loudness_list_of_dicts)
+
+    with open(f"{PATH}/aggregate_data.json", 'w') as aggfile:
+        json.dump(loudness_list_of_dicts, aggfile, indent=4)
+
+    with open(f"{PATH}/vqe_conf.json", 'w') as cfile:
+        json.dump(config, cfile, indent=4)
+
+    config['nextpathid'] += 1
+    with open("vqe_conf.json", 'w') as cfile:
+        json.dump(config, cfile, indent=4)
 
     return loudness_list_of_dicts
 
