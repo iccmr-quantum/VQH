@@ -61,7 +61,7 @@ def update_compfile():
     with open('composition_template.json', 'w') as compfile:
 
         comp = {arg.pop('eventid'):{key:float(arg[key]) for key in arg} for arg in comp_events}
-        logger.debug(f'COMP EVENTS F/ CSV: {comp}')
+        #logger.debug(f'COMP EVENTS F/ CSV: {comp}')
         lastevent = len(comp)
         comp[str(-lastevent)] = comp.pop(str(lastevent))
         json.dump(comp, compfile, indent=4)
@@ -82,7 +82,7 @@ def CLI(BACKEND):
     global progQuit, comp, last, reset, generated_quasi_dist, comp_events
     generated_quasi_dist = []
     
-    print("here")
+    #print("here")
     try:
         ce = DictReader(open("comp_events_template.csv"), skipinitialspace=True)
         print(ce)
@@ -94,10 +94,10 @@ def CLI(BACKEND):
         with open('composition_template.json') as compfile:
             composition = json.load(compfile)
             comp_events = deque([int(x) for x in composition])
-            logger.debug(f'LOADED COMPOSITION: {composition}')
+            #logger.debug(f'LOADED COMPOSITION: {composition}')
             reset = True
 
-    print("here")
+    #print("here")
     # prompt preparation
     session = PromptSession()
     validator = Validator.from_callable(is_command, error_message='This command does not exist. Check for mispellings.')
