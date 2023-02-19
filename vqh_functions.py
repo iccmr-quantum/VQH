@@ -6,6 +6,7 @@ from qiskit_optimization import QuadraticProgram
 from qiskit.algorithms.optimizers import COBYLA, NFT, SPSA
 from qiskit.quantum_info import SparsePauliOp
 from qiskit.opflow.primitive_ops import PauliSumOp
+import matplotlib.pyplot as plt
 import numpy as np
 import copy
 import csv
@@ -30,7 +31,7 @@ def build_qubos_from_csv():
         hsetup = list(csv.reader(hcsv, delimiter=','))
 
     header = hsetup.pop(0)
-    logger.debug(f'CSV Header: {header}')
+    #logger.debug(f'CSV Header: {header}')
     n_of_ham = int(header[1])
     n_of_notes = int(header[2])
     qubos = []
@@ -38,7 +39,7 @@ def build_qubos_from_csv():
         notes = hsetup.pop(h*n_of_notes)[1:]
         qubos.append({(l[0], notes[i]): float(
             n) for l in hsetup[h*n_of_notes:h*n_of_notes+n_of_notes] for i, n in enumerate(l[1:])})
-    logger.debug(f'QUBOS: {qubos}')
+    #logger.debug(f'QUBOS: {qubos}')
 
     return qubos
 
@@ -171,6 +172,7 @@ def run_vqe(ansatz, operator, optimizer, initial_point):
     vqe = VQE(estimator, ansatz, optimizer, initial_point=initial_point,
               callback=store_intermediate_result)
     result = vqe.compute_minimum_eigenvalue(operator)
+    #print(result)
     intermediate_info = {'eval_counts': eval_counts, 'values': values,
                          'parameterss': parameterss, 'metadatas': metadatas}
     return result, intermediate_info
@@ -217,9 +219,11 @@ def harmonize(qubos, iterations, **kwargs):
     global PATH
     QD = []
     max_state = []
+    valuess = []
     for count, qubo in enumerate(qubos):
+        print(f'Working on hamiltonian #{count}')
         operator, variables_index = qubo_to_operator(qubo)
-        logger.debug(f'operator: {operator}')
+        #logger.debug(f'operator: {operator}')
         optimizer = return_optimizer(
             kwargs['optimizer_name'], iterations[count])
         ansatz = EfficientSU2(num_qubits=len(
@@ -231,6 +235,7 @@ def harmonize(qubos, iterations, **kwargs):
         result, intermediate_info = run_vqe(
             ansatz_temp, operator, optimizer, initial_point)
         parameterss = intermediate_info['parameterss']
+        valuess.extend(intermediate_info['values'])
         quasi_dists = []
         # compute quasi distributions for each iteration of VQE
         for parameters in parameterss:
@@ -259,8 +264,24 @@ def harmonize(qubos, iterations, **kwargs):
             json.dump(QD, rawfile, indent=4)
         with open(f"{PATH}/max_prob_states.txt", 'w') as maxfile:
             maxfile.write('\n'.join(max_state))
-    return loudnesses
+    return loudnesses, valuess
 
+def plot_values(values):
+    global PATH
+    plt.figure()
+    #print(values)
+    plt.plot(values, color='sandybrown')
+    plt.savefig(f"{PATH}/values_plot", dpi=300)
+    #plt.show()
+
+def plot_loudness(loudnesses):
+    global PATH
+    #print(loudnesses)
+    for k in loudnesses:
+        plt.plot(loudnesses[k])
+    plt.legend(list(loudnesses.keys()))
+    plt.savefig(f"{PATH}/loudness_plot", dpi=300)
+    #plt.show()
 
 def run_vqh():
     global PATH
@@ -270,10 +291,14 @@ def run_vqh():
     PATH = f"Data/Data_{config['nextpathid']}"
     qubos = build_qubos_from_csv()
     iterations = [64, 64, 64, 64]
-    loudnesses = harmonize(qubos, iterations, **config)
+    #iterations = [128, 128, 128, 128]
+    #iterations = [16, 16, 16, 16]
+    loudnesses, values = harmonize(qubos, iterations, **config)
     loudness_list_of_dicts = loudnesses_to_list_of_dicts(loudnesses)
     #logger.debug(loudness_list_of_dicts)
 
+    plot_loudness(loudnesses)
+    plot_values(values)
     with open(f"{PATH}/aggregate_data.json", 'w') as aggfile:
         json.dump(loudness_list_of_dicts, aggfile, indent=4)
 
@@ -330,7 +355,7 @@ def test_harmonize():
 
     qubos = [c_major, g_major, f_major, c_major]
     iterations = [64, 64, 64, 64]
-    logger.debug(qubos)
+    #logger.debug(qubos)
     loudnesses = harmonize(qubos, iterations, **config)
     loudness_list_of_dicts = loudnesses_to_list_of_dicts(loudnesses)
 

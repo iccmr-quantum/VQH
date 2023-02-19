@@ -53,7 +53,7 @@ reset = True
 port = ''
 
 #VALID_COMMANDS = ['n', 'next', 'repeat', 'previous', 'reset', 'set', 'play', 'updatecomp', 'runvqe', 'changebackend', 'changehub', 'changegroup', 'changeproject', 'loadaccount', 'q', 'quit']
-VALID_COMMANDS = ['play', 'runvqe', 'q', 'quit', 'stop', 'testvqe']
+VALID_COMMANDS = ['play', 'runvqe', 'q', 'quit', 'stop', 'testvqe', 'playfile']
 
 def update_compfile():
 
@@ -66,7 +66,11 @@ def update_compfile():
         comp[str(-lastevent)] = comp.pop(str(lastevent))
         json.dump(comp, compfile, indent=4)
 
-
+def playfile(num):
+    path = f"Data/Data_{num}"
+    with open(f"{path}/aggregate_data.json") as file:
+        dist = json.load(file)
+    sc.sonify(dist)
 def run_event(event):
 
     global comp_events
@@ -85,7 +89,7 @@ def CLI(BACKEND):
     #print("here")
     try:
         ce = DictReader(open("comp_events_template.csv"), skipinitialspace=True)
-        print(ce)
+        #print(ce)
         open('composition_template.json', 'w')
     except:
         print("not successfulk")
@@ -192,6 +196,8 @@ def CLI(BACKEND):
             else:
                 print('Error! Try Again')
 
+        elif x[0] == 'playfile':
+            playfile(x[1])
         elif x[0] == 'stop':
             sc.freeall()
         elif x[0] == 'play':
