@@ -67,8 +67,8 @@ def update_compfile():
         comp[str(-lastevent)] = comp.pop(str(lastevent))
         json.dump(comp, compfile, indent=4)
 
-def playfile(num):
-    path = f"Data/Data_{num}"
+def playfile(num, folder):
+    path = f"{folder}/Data_{num}"
     with open(f"{path}/aggregate_data.json") as file:
         dist = json.load(file)
     sc.sonify(dist)
@@ -199,7 +199,7 @@ def CLI(BACKEND):
                 print('Error! Try Again')
 
         elif x[0] == 'playfile':
-            playfile(x[1])
+            playfile(x[1], globalsvqh.SESSIONPATH)
         elif x[0] == 'stop':
             sc.freeall()
         elif x[0] == 'play':
