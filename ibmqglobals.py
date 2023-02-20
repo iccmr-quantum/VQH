@@ -1,4 +1,4 @@
-# QuSequencer Global variables
+# IBMQ Global variables
 
 global HUB
 HUB = 'ibm-q'
