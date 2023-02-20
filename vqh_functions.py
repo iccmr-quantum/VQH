@@ -13,6 +13,7 @@ import csv
 import json
 import logging
 import os
+from shutil import copy2
 
 level = logging.DEBUG
 
@@ -25,20 +26,20 @@ logger.addHandler(handler)
 
 
 global PATH
-def build_qubos_from_csv():
+def build_qubos_from_csv(n_of_ham=4, n_of_notes=12):
 
     with open("h_setup.csv", 'r') as hcsv:
         hsetup = list(csv.reader(hcsv, delimiter=','))
 
-    header = hsetup.pop(0)
+    #header = hsetup.pop(0)
     #logger.debug(f'CSV Header: {header}')
-    n_of_ham = int(header[1])
-    n_of_notes = int(header[2])
+    #n_of_ham = int(header[1])
+    #n_of_notes = int(header[2])
     qubos = []
     for h in range(n_of_ham):
         notes = hsetup.pop(h*n_of_notes)[1:]
-        qubos.append({(l[0], notes[i]): float(
-            n) for l in hsetup[h*n_of_notes:h*n_of_notes+n_of_notes] for i, n in enumerate(l[1:])})
+        qubos.append({(row[0], notes[i]): float(
+            n) for row in hsetup[h*n_of_notes:h*n_of_notes+n_of_notes] for i, n in enumerate(row[1:])})
     #logger.debug(f'QUBOS: {qubos}')
 
     return qubos
@@ -213,7 +214,7 @@ def loudnesses_to_list_of_dicts(loudnesses):
     return loudness_list_of_dicts
 
 
-def harmonize(qubos, iterations, **kwargs):
+def harmonize(qubos, **kwargs):
     '''Run harmonizer algorithm for list of qubos and list of iterations. VQE is performed for the i-th qubo for i-th number of iterations.'''
     # loop over qubos
     global PATH
@@ -225,7 +226,7 @@ def harmonize(qubos, iterations, **kwargs):
         operator, variables_index = qubo_to_operator(qubo)
         #logger.debug(f'operator: {operator}')
         optimizer = return_optimizer(
-            kwargs['optimizer_name'], iterations[count])
+            kwargs['optimizer_name'], kwargs['iterations'][count])
         ansatz = EfficientSU2(num_qubits=len(
             variables_index), reps=kwargs['reps'], entanglement=kwargs['entanglement'])
         if count == 0:
@@ -283,17 +284,14 @@ def plot_loudness(loudnesses):
     plt.savefig(f"{PATH}/loudness_plot", dpi=300)
     #plt.show()
 
-def run_vqh():
+def run_vqh(sessionname):
     global PATH
     with open("vqe_conf.json") as cfile:
         config = json.load(cfile)
 
-    PATH = f"Data/Data_{config['nextpathid']}"
-    qubos = build_qubos_from_csv()
-    iterations = [64, 64, 64, 64]
-    #iterations = [128, 128, 128, 128]
-    #iterations = [16, 16, 16, 16]
-    loudnesses, values = harmonize(qubos, iterations, **config)
+    PATH = f"{sessionname}/Data_{config['nextpathid']}"
+    qubos = build_qubos_from_csv(config["sequence_length"], config["size"])
+    loudnesses, values = harmonize(qubos, **config)
     loudness_list_of_dicts = loudnesses_to_list_of_dicts(loudnesses)
     #logger.debug(loudness_list_of_dicts)
 
@@ -305,6 +303,8 @@ def run_vqh():
     with open(f"{PATH}/vqe_conf.json", 'w') as cfile:
         json.dump(config, cfile, indent=4)
 
+    copy2("h_setup.csv", f"{PATH}")
+
     config['nextpathid'] += 1
     with open("vqe_conf.json", 'w') as cfile:
         json.dump(config, cfile, indent=4)
@@ -314,12 +314,16 @@ def run_vqh():
 
 def test_harmonize():
 
+    global PATH
+
+    PATH = "Data/Test"
     # specify all possible notes. This is one octave. For more octaves, just add more notes.
     notes = ['c', 'c#', 'd', 'd#', 'e', 'f', 'f#', 'g', 'g#', 'a', 'a#', 'b']
     config = {
         'reps': 1,
         'entanglement': 'linear',
-        'optimizer_name': 'COBYLA'
+        'optimizer_name': 'COBYLA',
+        'iterations': [64, 64, 64, 64]
     }
     # example simple c major. Different Hamiltonians with superposition of chords as ground state are possible.
     # beneficial negative weights for desired notes
@@ -354,9 +358,8 @@ def test_harmonize():
             g_major[(note, note)] = 1.
 
     qubos = [c_major, g_major, f_major, c_major]
-    iterations = [64, 64, 64, 64]
     #logger.debug(qubos)
-    loudnesses = harmonize(qubos, iterations, **config)
+    loudnesses, values = harmonize(qubos, **config)
     loudness_list_of_dicts = loudnesses_to_list_of_dicts(loudnesses)
 
     return loudness_list_of_dicts

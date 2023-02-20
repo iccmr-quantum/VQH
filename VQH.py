@@ -23,6 +23,7 @@ import time
 
 # Global variables
 import ibmqglobals
+import globalsvqh
 
 # Event Management
 import json
@@ -71,6 +72,7 @@ def playfile(num):
     with open(f"{path}/aggregate_data.json") as file:
         dist = json.load(file)
     sc.sonify(dist)
+
 def run_event(event):
 
     global comp_events
@@ -192,7 +194,7 @@ def CLI(BACKEND):
         elif x[0] == 'runvqe':
             if len(x) == 1:
                 print("running VQE")
-                generated_quasi_dist = vqh.run_vqh()
+                generated_quasi_dist = vqh.run_vqh(globalsvqh.SESSIONPATH)
             else:
                 print('Error! Try Again')
 
@@ -287,6 +289,7 @@ internal VQH functions:\n\
 
     p = argparse.ArgumentParser(description=descr, formatter_class=RawDescriptionHelpFormatter)
 
+    p.add_argument('sessionpath', type=str, nargs='?', default='Session_', help="Folder name where VQE data will be stored/read")
     p.add_argument('backend', type=str, nargs='?', default='Aer', help="IBM Quantum backend. Use 'Aer' for simulation ('aer_simulator'). Use 'least_busy' for real hardware, it will find the least busy IBMQ backend to run the job. Or use a custom backend name such as 'ibmq_belem'. NOTE: You need to load your IBMQ account to use real hardware. Run this script with the flag '--loadaccount'.")
     p.add_argument('--loadaccount', nargs='?', type=bool, const=True, default=False, help="Loads the locally stored IBMQ Account (IBMQ.load_account() python function). You need to use this flag if you intend to generate notes using real quantum hardware. Similar to the QuSequencer internal function 'loadaccount'. The script will take a few more seconds to start. For more information on how to store your IBMQ account, visit https://quantum-computing.ibm.com/lab/docs/iql/manage/account/ibmq")
     p.add_argument('--hub', nargs='?', type=str, default=None, help="IBM Quantum Provider's 'hub' argument, for backends with restricted access. Note: You NEED to use '--loadaccount' together with this flag!")
@@ -295,6 +298,8 @@ internal VQH functions:\n\
     args = p.parse_args()
     logger.debug(args)
 
+
+    globalsvqh.SESSIONPATH = args.sessionpath
 
     if args.hub != None:
         config.HUB = args.hub
