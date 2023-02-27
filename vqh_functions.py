@@ -1,6 +1,6 @@
 from qiskit.algorithms.minimum_eigensolvers import VQE
 from qiskit.algorithms.optimizers import COBYLA
-from qiskit.primitives import Estimator, Sampler
+from qiskit_aer.primitives import Sampler
 from qiskit.circuit.library import EfficientSU2
 from qiskit_optimization import QuadraticProgram
 from qiskit.algorithms.optimizers import COBYLA, NFT, SPSA
@@ -26,6 +26,8 @@ logger.addHandler(handler)
 
 
 global PATH
+
+
 def build_qubos_from_csv(n_of_ham=4, n_of_notes=12):
 
     with open("h_setup.csv", 'r') as hcsv:
@@ -70,7 +72,7 @@ def qubo_to_operator_quadratic_program(qubo):
     return operator, variables_index
 
 
-def qubo_to_operator(qubo, linear_pauli='Z'):
+def qubo_to_operator(qubo, linear_pauli='Z', external_field=0.):
     '''Translate qubo of format {(note_1, note_2): coupling, ...} to operator to be used in VQE. This function can yield non-diagonal Hamiltonians.'''
 
    # First, we need to create a dictionary that maps the variables to their index in the operator
@@ -137,6 +139,8 @@ def qubo_to_operator(qubo, linear_pauli='Z'):
     # H = 4*Q + const
     # Q = H/4 - const/4 = operator + offset
     pauli_list = [(k, v/4) for k, v in paulis.items()]
+    # external magnetic field in X direction
+    pauli_list.append(('X'*num_qubits, external_field))
     operator = PauliSumOp(SparsePauliOp.from_list(pauli_list))
     offset = -const/4
 
@@ -156,46 +160,46 @@ def return_optimizer(optimizer_name, maxiter):
     return optimizer
 
 
-def run_vqe(ansatz, operator, optimizer, initial_point):
-    '''Run VQE with given ansatz, operator, optimizer and initial point, store intermediate results for every iteration'''
+def run_sampling_vqe(ansatz, operator, optimizer, initial_point):
+    binary_probabilities = []
+    expectation_values = []
 
-    eval_counts = []
-    parameterss = []
-    values = []
-    metadatas = []
+    def evaluate_expectation_value(ansatz, params, operator):
+        ansatz_temp = copy.deepcopy(ansatz)
+        ansatz_temp.measure_all()
+        sample = sampler.run(circuits=ansatz_temp,
+                             parameter_values=params).result()
+        sample_binary_probabilities = sample.quasi_dists[0].binary_probabilities(
+        )
+        sample_energy = {key: np.real(operator.eval(key).eval(
+            key)) for key in sample_binary_probabilities}
+        expectation_value = 0.
+        for key, value in sample_energy.items():
+            probablility = sample_binary_probabilities[key]
+            expectation_value += value*probablility
+        binary_probabilities.append(sample_binary_probabilities)
+        expectation_values.append(np.real(expectation_value))
+        return np.real(expectation_value)
 
-    def store_intermediate_result(eval_count, parameters, value, metadata):
-        eval_counts.append(eval_count)
-        parameterss.append(parameters)
-        values.append(value)
-        metadatas.append(metadata)
-    estimator = Estimator()
-    vqe = VQE(estimator, ansatz, optimizer, initial_point=initial_point,
-              callback=store_intermediate_result)
-    result = vqe.compute_minimum_eigenvalue(operator)
-    #print(result)
-    intermediate_info = {'eval_counts': eval_counts, 'values': values,
-                         'parameterss': parameterss, 'metadatas': metadatas}
-    return result, intermediate_info
+    sampler = Sampler(
+        backend_options={'method': 'automatic',
+                         'noise_model': None, 'basis_gates': None, 'coupling_map': None},
+        run_options={'shots': 1024})
 
+    result = optimizer.minimize(lambda x: evaluate_expectation_value(
+        ansatz=ansatz, params=x, operator=operator), x0=initial_point)
 
-def intermediate_parameters_to_quasi_dist(ansatz, parameters):
-    '''Convert intermediate results to quasi distributions. This is done by sampling from the ansatz with the parameters obtained from each iteration of VQE'''
-    sampler = Sampler()
-    job = sampler.run(ansatz, parameter_values=parameters)
-    result = job.result()
-    quasi_dist = result.quasi_dists[0]
-    quasi_dist = quasi_dist.binary_probabilities()
-    return quasi_dist
+    return result, binary_probabilities, expectation_values
 
 
-def quasi_dists_to_loudness(quasi_dists, variables_index):
-    '''Convert list of quasi distributions to loudness'''
+def binary_probabilities_to_loudness(binary_probabilities, variables_index):
+    '''Convert binary probabilities to loudness'''
 
-    loudnesses = {v: np.zeros(len(quasi_dists)) for v in variables_index}
+    loudnesses = {v: np.zeros(len(binary_probabilities))
+                  for v in variables_index}
     variables_index_invert = {v: k for k, v in variables_index.items()}
-    for iteration, quasi_dist in enumerate(quasi_dists):
-        for key, value in quasi_dist.items():
+    for iteration, binary_probability in enumerate(binary_probabilities):
+        for key, value in binary_probability.items():
             for index, bit in enumerate(key[::-1]):
                 if bit == '1':
                     note = variables_index_invert[index]
@@ -221,6 +225,7 @@ def harmonize(qubos, **kwargs):
     QD = []
     max_state = []
     valuess = []
+    loudnesses = {}
     for count, qubo in enumerate(qubos):
         print(f'Working on hamiltonian #{count}')
         operator, variables_index = qubo_to_operator(qubo)
@@ -233,32 +238,24 @@ def harmonize(qubos, **kwargs):
             initial_point = np.zeros(ansatz.num_parameters)
         # copy ansatz to avoid VQE changing it
         ansatz_temp = copy.deepcopy(ansatz)
-        result, intermediate_info = run_vqe(
+        result, binary_probabilities, expectation_values = run_sampling_vqe(
             ansatz_temp, operator, optimizer, initial_point)
-        parameterss = intermediate_info['parameterss']
-        valuess.extend(intermediate_info['values'])
-        quasi_dists = []
-        # compute quasi distributions for each iteration of VQE
-        for parameters in parameterss:
-            ansatz_temp = copy.deepcopy(ansatz)
-            ansatz_temp.measure_all()
-            quasi_dist = intermediate_parameters_to_quasi_dist(
-                ansatz_temp, parameters)
-            quasi_dists.append(quasi_dist)
-            max_state.append(max(quasi_dist, key=quasi_dist.get))
-            #logger.debug(f'Max value state: {max(quasi_dist, key=quasi_dist.get)}')
-            QD.append(quasi_dist)
+        valuess.extend(expectation_values)
+        for binary_probability in binary_probabilities:
+            QD.append(binary_probability)
+            max_state.append(
+                max(binary_probability, key=binary_probability.get))
         if count == 0:
-            loudnesses = quasi_dists_to_loudness(
-                quasi_dists, variables_index)
+            loudnesses = binary_probabilities_to_loudness(
+                binary_probabilities, variables_index)
         else:
-            loudnesses_temp = quasi_dists_to_loudness(
-                quasi_dists, variables_index)
+            loudnesses_temp = binary_probabilities_to_loudness(
+                binary_probabilities, variables_index)
             for key, value in loudnesses_temp.items():
                 loudnesses[key] = np.append(loudnesses[key], value)
         # set initital point for next qubo to be the optimal point of the previous qubo
-        initial_point = result.optimal_point
-        
+        initial_point = result.x
+
         os.makedirs(PATH, exist_ok=True)
 
         with open(f"{PATH}/rawdata.json", 'w') as rawfile:
@@ -267,22 +264,25 @@ def harmonize(qubos, **kwargs):
             maxfile.write('\n'.join(max_state))
     return loudnesses, valuess
 
+
 def plot_values(values):
     global PATH
     plt.figure()
-    #print(values)
+    # print(values)
     plt.plot(values, color='sandybrown')
     plt.savefig(f"{PATH}/values_plot", dpi=300)
-    #plt.show()
+    # plt.show()
+
 
 def plot_loudness(loudnesses):
     global PATH
-    #print(loudnesses)
+    # print(loudnesses)
     for k in loudnesses:
         plt.plot(loudnesses[k])
     plt.legend(list(loudnesses.keys()))
     plt.savefig(f"{PATH}/loudness_plot", dpi=300)
-    #plt.show()
+    # plt.show()
+
 
 def run_vqh(sessionname):
     global PATH
@@ -293,7 +293,7 @@ def run_vqh(sessionname):
     qubos = build_qubos_from_csv(config["sequence_length"], config["size"])
     loudnesses, values = harmonize(qubos, **config)
     loudness_list_of_dicts = loudnesses_to_list_of_dicts(loudnesses)
-    #logger.debug(loudness_list_of_dicts)
+    # logger.debug(loudness_list_of_dicts)
 
     plot_loudness(loudnesses)
     plot_values(values)
@@ -358,7 +358,7 @@ def test_harmonize():
             g_major[(note, note)] = 1.
 
     qubos = [c_major, g_major, f_major, c_major]
-    #logger.debug(qubos)
+    # logger.debug(qubos)
     loudnesses, values = harmonize(qubos, **config)
     loudness_list_of_dicts = loudnesses_to_list_of_dicts(loudnesses)
 
