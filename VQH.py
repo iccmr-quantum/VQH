@@ -69,9 +69,11 @@ def update_compfile():
 
 def playfile(num, folder):
     path = f"{folder}/Data_{num}"
-    with open(f"{path}/aggregate_data.json") as file:
-        dist = json.load(file)
-    sc.sonify(dist)
+    with open(f"{path}/aggregate_data.json") as afile:
+        dist = json.load(afile)
+    with open(f"{path}/exp_values.txt") as efile:
+        vals = [float(val.rstrip()) for val in efile]
+    sc.sonify(dist, vals)
 
 def run_event(event):
 
@@ -194,7 +196,7 @@ def CLI(BACKEND):
         elif x[0] == 'runvqe':
             if len(x) == 1:
                 print("running VQE")
-                generated_quasi_dist = vqh.run_vqh(globalsvqh.SESSIONPATH)
+                generated_quasi_dist, generated_values = vqh.run_vqh(globalsvqh.SESSIONPATH)
             else:
                 print('Error! Try Again')
 
@@ -204,7 +206,7 @@ def CLI(BACKEND):
             sc.freeall()
         elif x[0] == 'play':
             if generated_quasi_dist != []:
-                sc.sonify(generated_quasi_dist)
+                sc.sonify(generated_quasi_dist, generated_values)
             else:
                 print("Quasi Dists NOT generated!")
 

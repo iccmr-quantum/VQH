@@ -262,6 +262,10 @@ def harmonize(qubos, **kwargs):
             json.dump(QD, rawfile, indent=4)
         with open(f"{PATH}/max_prob_states.txt", 'w') as maxfile:
             maxfile.write('\n'.join(max_state))
+        with open(f"{PATH}/exp_values.txt", 'w') as expfile:
+            for value in valuess:
+                expfile.write(f"{value}\n")
+
     return loudnesses, valuess
 
 
@@ -309,7 +313,7 @@ def run_vqh(sessionname):
     with open("vqe_conf.json", 'w') as cfile:
         json.dump(config, cfile, indent=4)
 
-    return loudness_list_of_dicts
+    return loudness_list_of_dicts, values
 
 
 def test_harmonize():
