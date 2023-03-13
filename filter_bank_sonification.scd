@@ -71,12 +71,12 @@ SynthDef(\input_signal3, { |out=0, bufnum=0, amp=1, rate=1, pos=2.1, dur=0.4, tg
 
 	//env = EnvGen.ar(Env.new([0, 1], dur), doneAction:2);
 	//trate = MouseY.kr(2,200,1);
-	trate = tgrate;
+	trate = tgrate*5;
 	tdur = 4 / trate;
-	env = EnvGen.ar(Env.new([0, 1], dur), doneAction:2);
+	env = EnvGen.ar(Env.new([0, 1, 0], dur/2), doneAction:2);
 	//sig = TGrains.ar(1, Impulse.ar(trate), bufnum, rate, MouseX.kr(0,BufDur.kr(bufnum)), tdur);
 	//sig = TGrains.ar(1, Impulse.ar(trate), bufnum, tgrate/20, TRand.kr(0,BufDur.kr(bufnum), Impulse.kr(trate)), tdur);
-	sig = TGrains.ar(1, Impulse.ar(trate), bufnum, rate, tgrate/20, tdur);
+	sig = TGrains.ar(1, Impulse.ar(trate), bufnum, rate, tgrate, tdur);
 	//sig = sig + WhiteNoise.ar(0.25);
 	Out.ar(out, sig);
 }).store;
