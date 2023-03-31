@@ -44,7 +44,23 @@ def note_loudness_multiple(loudnessstream):
             synth.set(NOTESDICT[k], amp)
         time.sleep(0.1)
 
-def mel_filterbank_loudness_multiple(loudnessstream):
+def note_loudness_multiple_rs(loudnessstream, expect_values):
+    global server, NOTESDICT
+
+
+    labels = ["amp1", "amp2", "amp3", "amp4", "amp5", "amp6", "amp7", "amp8", "amp9", "amp10", "amp11", "amp12"]
+    loudness = np.zeros(12)
+    args = dict(zip(labels,loudness))
+    synth = Synth(server, "vqe_son3", args)
+
+    for v, state in enumerate(loudnessstream):
+        print(state)
+        for k, amp in state.items():
+            synth.set(NOTESDICT[k], amp)
+        synth.set("shift", expect_values[v])
+        time.sleep(0.05)
+
+def mel_filterbank_loudness_multiple(loudnessstream, inbufnum=12):
     global server, NOTESDICT
 
 
@@ -52,7 +68,7 @@ def mel_filterbank_loudness_multiple(loudnessstream):
     loudness = np.zeros(12)
     args = dict(zip(labels,loudness))
     args["bufnum"] = 0
-    args["inbufnum"] = 12
+    args["inbufnum"] = inbufnum
     synth = Synth(server, "mel_fb_dif1", args)
 
     for state in loudnessstream:
@@ -86,10 +102,10 @@ def mel_filterbank_loudness_multiple_decoupled(loudnessstream, expect_values):
         shifted_value = (expect_values[v] - min(expect_values))
         for k, amp in state.items():
             synth.set(NOTESDICT[k], amp)
-            #sy = Synth(server, "input_signal2", {"out":srcbus.id}, target=srcgroup)
-            sy = Synth(server, "input_signal3", {"bufnum": 15, "out":srcbus.id, "tgrate":shifted_value}, target=srcgroup)
+        sy = Synth(server, "input_signal2", {"out":srcbus.id}, target=srcgroup)
+            #sy = Synth(server, "input_signal3", {"bufnum": 15, "out":srcbus.id, "tgrate":shifted_value}, target=srcgroup)
         #synth.set("gate", 0)
-        time.sleep(0.1)
+        #time.sleep(0.3)
 
 def note_cluster_intensity(loudnessstream, expect_values):
     global server
@@ -107,17 +123,45 @@ def note_cluster_intensity(loudnessstream, expect_values):
             time.sleep(0.035+shifted_value)
         #time.sleep(0.2)
 
+def granular_triggers(loudnessstream, expect_values):
+    global server
 
 
-def sonify(loudnessstream, expect_values):
+    labels = ["s0", "s1", "s2", "s3"]
+    loudness = np.zeros(4)
+    args = dict(zip(labels,loudness))
+
+    synth = Synth(server, "vqgrains", args)
+
+    for v, state in enumerate(loudnessstream):
+        print(state)
+        print(f" shifted value: {(expect_values[v] - min(expect_values))}")
+        shifted_value = (expect_values[v] - min(expect_values))
+        #shifted_value = -(shifted_value - max(expect_values)) #Uncomment to change shift direction
+        for k, amp in state.items():
+            synth.set(k, amp)
+            synth.set("rate", shifted_value+0.01)
+        time.sleep(0.1)
+
+
+
+def sonify(loudnessstream, expect_values, son_type=1):
     
     global server
 
     server = Server()
-    #note_loudness_multiple(loudnessstream)
-    #note_cluster_intensity(loudnessstream, expect_values)
-    #mel_filterbank_loudness_multiple(loudnessstream)
-    mel_filterbank_loudness_multiple_decoupled(loudnessstream, expect_values)
+    if son_type == 1:
+        note_loudness_multiple(loudnessstream)
+    elif son_type == 2:
+        note_cluster_intensity(loudnessstream, expect_values)
+    elif son_type == 3:
+        mel_filterbank_loudness_multiple(loudnessstream, inbufnum=14)
+    elif son_type == 4:
+        mel_filterbank_loudness_multiple_decoupled(loudnessstream, expect_values)
+    elif son_type == 5:
+        note_loudness_multiple_rs(loudnessstream, expect_values)
+    elif son_type == 6:
+        granular_triggers(loudnessstream, expect_values)
 
 def freeall():
     global server
