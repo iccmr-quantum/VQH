@@ -5,7 +5,7 @@ SynthDef(\mel_fb_dif1, { |out=0, gain=0.5, bufnum=0, inbufnum=12, amp1=0.1, amp2
 	var in, chainIn, chainOut, bands=12, buffers, sig;
 
 
-	//in = WhiteNoise.ar(0.4);
+	//in = WhiteNoise.ar(0.05);
 	//in = LFSaw.ar(MouseY.kr(100, 1000, 1), 0, 0.2);
 	in = PlayBuf.ar(1, inbufnum, doneAction:2);
 
@@ -26,13 +26,13 @@ SynthDef(\mel_fb_dif1, { |out=0, gain=0.5, bufnum=0, inbufnum=12, amp1=0.1, amp2
 
 
 Synth("mel_fb_dif1", [\bufnum,~hh[0].bufnum, \inbufnum, ~viola.bufnum])
-
-
+s.sampleRate
+{SampleRate.ir}.play.postln
 
 ~hh = Buffer.allocConsecutive(12, s, 1024);
 
-~viola = Buffer.read(s, "VA_R42_c_LevadonaEstalo.wav")
-~viola = Buffer.read(s, "VA_K122_v_Viola_e_voz01.wav")
+~viola = Buffer.read(s, "Ryu_Jin_Selected3.wav")
+~viola = Buffer.read(s, "RJ_1_click_single_band_100.wav")
 ~viola.play
 
 12.do({|i| ~hh[i].read("melfb"++i++".wav").postln;})
@@ -189,8 +189,45 @@ a.set(\doneAction, 2, \gate, 0); // set doneAction to two to let the synth free 
 
 a.free; // alternatively, free it directly.
 
+//--- Recording
+(
+~subdir="Recordings";
+~path=thisProcess.nowExecutingPath.dirname +/+ ~subdir;
 
+)
+
+~name = "wt_test3";
+s.prepareForRecord(~path++"_"++~name.asString++".wav");
+
+s.record;
+s.stopRecording;
+
+(
+{1.do{|i| var z;
+	// Duration in seconds
+
+	~note=i;
+	if(i<=9, {z = "0"}, {z = ""});
+	// File name
+	s.prepareForRecord(~path++"_"++~name.asString++".wav");
+	0.5.wait;
+
+	s.record;
+	0.2.wait;
+	~seq.start;
+	0.5.wait;
+	~dur=~duration+3;
+	~dur.wait;
+
+	s.stopRecording;
+	0.5.wait;
+}
+}.fork;
+
+)
 ~viola = Buffer.read(s, Platform.resourceDir +/+ "sounds/a11wlk01.wav");
+~viola = Buffer.read(s, "RS_SC_sounds/RJ_1_click_original.wav")
+~viola = Buffer.read(s, "RS_SC_sounds/Ryu_Jin_Selected1_Treated.wav")
 ~viola.play;
 (
 {
@@ -199,5 +236,17 @@ a.free; // alternatively, free it directly.
     dur = 4 / trate;
     rate = Dseq([10, 1, 1, 0.5, 0.5, 0.2, 0.1], inf);
     TGrains.ar(2, Impulse.ar(trate), ~viola, rate, MouseX.kr(0,BufDur.kr(~viola)), dur, Dseq([-1, 1], inf), 0.1, 2);
+}.scope(zoom: 4);
+)
+
+(
+{
+    var trate, dur, clk, pos, pan;
+    trate = MouseY.kr(8,120,1);
+    dur = 12 / trate;
+    clk = Impulse.kr(trate);
+    pos = MouseX.kr(0,BufDur.kr(~viola)) + TRand.kr(0, 0.01, clk);
+    pan = WhiteNoise.kr(0.6);
+    TGrains.ar(2, clk, ~viola, 1, pos, dur, pan, 0.7);
 }.scope(zoom: 4);
 )
