@@ -67,13 +67,13 @@ def update_compfile():
         comp[str(-lastevent)] = comp.pop(str(lastevent))
         json.dump(comp, compfile, indent=4)
 
-def playfile(num, folder):
+def playfile(num, folder, son_type=1):
     path = f"{folder}/Data_{num}"
     with open(f"{path}/aggregate_data.json") as afile:
         dist = json.load(afile)
     with open(f"{path}/exp_values.txt") as efile:
         vals = [float(val.rstrip()) for val in efile]
-    sc.sonify(dist, vals)
+    sc.sonify(dist, vals, son_type)
 
 def run_event(event):
 
@@ -201,12 +201,18 @@ def CLI(BACKEND):
                 print('Error! Try Again')
 
         elif x[0] == 'playfile':
-            playfile(x[1], globalsvqh.SESSIONPATH)
+            son_type = 1
+            if len(x) == 3:
+                son_type = int(x[2])
+            playfile(x[1], globalsvqh.SESSIONPATH, son_type)
         elif x[0] == 'stop':
             sc.freeall()
         elif x[0] == 'play':
             if generated_quasi_dist != []:
-                sc.sonify(generated_quasi_dist, generated_values)
+                son_type = 1
+                if len(x) == 2:
+                    son_type = int(x[1])
+                sc.sonify(generated_quasi_dist, generated_values, son_type)
             else:
                 print("Quasi Dists NOT generated!")
 
