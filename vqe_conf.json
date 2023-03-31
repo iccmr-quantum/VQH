@@ -4,11 +4,12 @@
     "optimizer_name": "COBYLA",
     "sequence_length": 4,
     "size": 12,
+    "description": "",
     "iterations": [
         64,
         64,
         64,
         64
     ],
-    "nextpathid": 2
+    "nextpathid": 1
 }
