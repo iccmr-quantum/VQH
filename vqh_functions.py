@@ -4,6 +4,7 @@ from qiskit_aer.primitives import Sampler
 from qiskit.circuit.library import EfficientSU2
 from qiskit_optimization import QuadraticProgram
 from qiskit.algorithms.optimizers import COBYLA, NFT, SPSA
+from qiskit.algorithms.minimum_eigensolvers import NumPyMinimumEigensolver
 from qiskit.quantum_info import SparsePauliOp
 from qiskit.opflow.primitive_ops import PauliSumOp
 import matplotlib.pyplot as plt
@@ -367,3 +368,11 @@ def test_harmonize():
     loudness_list_of_dicts = loudnesses_to_list_of_dicts(loudnesses)
 
     return loudness_list_of_dicts
+
+def compute_exact_solution(operator):
+    '''Minimum eigenvalue computed using NumPyMinimumEigensolver'''
+    eigensolver = NumPyMinimumEigensolver()
+    result = eigensolver.compute_minimum_eigenvalue(operator)
+    
+    return result
+
