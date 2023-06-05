@@ -2,14 +2,11 @@
     "reps": 1,
     "entanglement": "linear",
     "optimizer_name": "COBYLA",
-    "sequence_length": 4,
-    "size": 12,
-    "description": "",
+    "sequence_length": 1,
+    "size": 8,
+    "description": "Dependent Matrices",
     "iterations": [
-        64,
-        64,
-        64,
-        64
+        256
     ],
-    "nextpathid": 1
+    "nextpathid": 10
 }

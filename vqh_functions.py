@@ -3,11 +3,14 @@ from qiskit.algorithms.optimizers import COBYLA
 from qiskit_aer.primitives import Sampler
 from qiskit.circuit.library import EfficientSU2
 from qiskit_optimization import QuadraticProgram
-from qiskit.algorithms.optimizers import COBYLA, NFT, SPSA, TNC
+from qiskit.algorithms.optimizers import COBYLA, NFT, SPSA, TNC, SLSQP
 from qiskit.quantum_info import SparsePauliOp
 from qiskit.opflow.primitive_ops import PauliSumOp
 from qiskit.opflow import X, Z, I, Y
 import matplotlib.pyplot as plt
+import matplotlib as mpl
+from matplotlib.colors import ListedColormap, LinearSegmentedColormap
+from cycler import cycler
 import numpy as np
 import copy
 import csv
@@ -15,6 +18,8 @@ import json
 import logging
 import os
 from shutil import copy2
+
+mpl.rcParams['toolbar'] = 'None'
 
 level = logging.DEBUG
 
@@ -83,7 +88,7 @@ def H_Ising(N,J,hx):# Arianna Crippa's Ising model implementation
 
     return H_Ising
 
-def qubo_to_operator(qubo, count, linear_pauli='Z', external_field=0):
+def qubo_to_operator(qubo, count, linear_pauli='Z', external_field=-0.2):
     '''Translate qubo of format {(note_1, note_2): coupling, ...} to operator to be used in VQE. This function can yield non-diagonal Hamiltonians.'''
 
    # First, we need to create a dictionary that maps the variables to their index in the operator
@@ -154,11 +159,12 @@ def qubo_to_operator(qubo, count, linear_pauli='Z', external_field=0):
     #pauli_list.append(('X'*num_qubits, external_field))
     for i in range(num_qubits):
         paulix = 'I'*i + 'X' + 'I'*(num_qubits-i-1)
-        pauli_list.append((paulix, external_field-0.2*count))
+        pauli_list.append((paulix, external_field))
+        #pauli_list.append((paulix, external_field-0.2*count))
     operator = PauliSumOp(SparsePauliOp.from_list(pauli_list))
     offset = -const/4
 
-    #operator2 = H_Ising(8, 1, external_field+0.2*count) # Compare H with Arianna's Ising operator
+    operator2 = H_Ising(8, 1, external_field+0.2*count) # Compare H with Arianna's Ising operator
     print(f'Operator: \n{operator}')
     #print(f'Ising: \n{operator2}')
     return operator, variables_index
@@ -174,7 +180,9 @@ def return_optimizer(optimizer_name, maxiter):
     elif optimizer_name == 'NFT':
         optimizer = NFT(maxiter=maxiter)
     elif optimizer_name == 'TNC':
-        optimizer = TNC(maxiter=maxiter)
+        optimizer = NFT(maxiter=maxiter)
+    elif optimizer_name == 'SLSQP':
+        optimizer = SLSQP(maxiter=maxiter)
 
     return optimizer
 
@@ -256,10 +264,12 @@ def harmonize(qubos, **kwargs):
             variables_index), reps=kwargs['reps'], entanglement=kwargs['entanglement'])
         if count == 0:
             initial_point = np.zeros(ansatz.num_parameters)
+            #initial_point = -0.5*np.ones(ansatz.num_parameters)
+            print(initial_point)
         # copy ansatz to avoid VQE changing it
         ansatz_temp = copy.deepcopy(ansatz)
         result, binary_probabilities, expectation_values = run_sampling_vqe(
-            ansatz_temp, operator, optimizer, initial_point)
+                ansatz_temp, operator, optimizer, initial_point)
         valuess.extend(expectation_values)
         for binary_probability in binary_probabilities:
             QD.append(binary_probability)
@@ -310,12 +320,20 @@ def plot_values(values):
 def plot_loudness(loudnesses):
     global PATH
     # print(loudnesses)
-    plt.figure()
+    fig = plt.figure()
+    plt.ioff()
+    rect = fig.patch
+    #rect.set_alpha(0.5)
+    rect.set_facecolor('#3a3f43')
+    ax = fig.add_subplot(111)
+    ax.patch.set_facecolor('#243131')
+    ax.patch.set_alpha(0.5)
+    ax.set_prop_cycle(cycler('color', ['#93abbe', '#202a23', '#c4c9d5', '#425547', '#336068', '#577b7d', '#4e656f', '#b4d4dc']))
     for k in loudnesses:
         plt.plot(loudnesses[k])
-    plt.legend(list(loudnesses.keys()))
+    plt.legend(list(loudnesses.keys()), facecolor='#243131', edgecolor='white')
     plt.savefig(f"{PATH}/loudness_plot", dpi=300)
-    # plt.show()
+    plt.show()
 
 
 def run_vqh(sessionname):
@@ -329,8 +347,7 @@ def run_vqh(sessionname):
     loudness_list_of_dicts = loudnesses_to_list_of_dicts(loudnesses)
     # logger.debug(loudness_list_of_dicts)
 
-    plot_loudness(loudnesses)
-    plot_values(values)
+    #plot_values(values)
     with open(f"{PATH}/aggregate_data.json", 'w') as aggfile:
         json.dump(loudness_list_of_dicts, aggfile, indent=4)
 
@@ -340,12 +357,12 @@ def run_vqh(sessionname):
     copy2("h_setup.csv", f"{PATH}")
 
     norm_values = (values - min(values))/(abs(max(values)-min(values)))
-    print(type(states), type(norm_values.tolist()), loudnesses)
+    #print(type(states), type(norm_values.tolist()), loudnesses)
     origination = {"states": states, "amps": loudness_list_of_dicts, "values": norm_values.tolist()}
     with open(f"{sessionname}/to_pete/dependent_origination.json", 'r') as dofile:
         old_data = json.load(dofile)
 
-    print(old_data)
+    #print(old_data)
     old_data[f"data_{config['nextpathid']}"] = origination
     config['nextpathid'] += 1
     with open("vqe_conf.json", 'w') as cfile:
@@ -354,6 +371,7 @@ def run_vqh(sessionname):
     with open(f"{sessionname}/to_pete/dependent_origination.json", 'w') as dofile:
         json.dump(old_data, dofile, indent=4)
 
+    plot_loudness(loudnesses)
     return loudness_list_of_dicts, values
 
 
