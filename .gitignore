@@ -13,3 +13,5 @@ h1_*
 h2_*
 Recordings/
 sort_paulis.py
+to_pete_template/*.pem
+to_pete_template/node_modules/
