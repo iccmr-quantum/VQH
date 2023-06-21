@@ -8,7 +8,8 @@ NOTESDICT = {"c":"amp1", "c#":"amp2", "d":"amp3", "d#":"amp4", "e":"amp5", "f":"
 global FREQDICT
 FREQDICT = {"c":60, "c#":61, "d":62, "d#":63, "e":64, "f":65, "f#":66, "g":67, "g#":68, "a":69, "a#":70, "b":71}
 
-def note_loudness(qd):
+
+def note_loudness(qd): # Deprecated --------------------
     global server
 
     labels = ["amp1", "amp2", "amp3", "amp4", "amp5", "amp6", "amp7", "amp8", "amp9", "amp10", "amp11", "amp12"]
@@ -29,6 +30,7 @@ def note_loudness(qd):
         loudnesses.append(loudness)
         time.sleep(0.2)
 
+# Mapping #1 - Simple additive synthesis
 def note_loudness_multiple(loudnessstream):
     global server, NOTESDICT
 
@@ -44,6 +46,7 @@ def note_loudness_multiple(loudnessstream):
             synth.set(NOTESDICT[k], amp)
         time.sleep(0.03)
 
+# Mapping #5 - Atonal additive sysnthesis chords used in "Rasgar, Saber" (2023)
 def note_loudness_multiple_rs(loudnessstream, expect_values):
     global server, NOTESDICT
 
@@ -60,6 +63,7 @@ def note_loudness_multiple_rs(loudnessstream, expect_values):
         synth.set("shift", expect_values[v])
         time.sleep(0.05)
 
+# Mapping #3 - Mel-Filterbank Spectral Diffusion
 def mel_filterbank_loudness_multiple(loudnessstream, inbufnum=12):
     global server, NOTESDICT
 
@@ -79,6 +83,7 @@ def mel_filterbank_loudness_multiple(loudnessstream, inbufnum=12):
         #synth.set("gate", 0)
         time.sleep(0.1)
 
+# Mapping #4 - Mel-Filterbank Spectral Diffusion with Pitchshift
 def mel_filterbank_loudness_multiple_decoupled(loudnessstream, expect_values):
     global server, NOTESDICT
 
@@ -107,6 +112,7 @@ def mel_filterbank_loudness_multiple_decoupled(loudnessstream, expect_values):
         #synth.set("gate", 0)
         #time.sleep(0.3)
 
+# Mapping #2 - Pitchshifted Arpeggios instead of chords. Philip Glass vibes.
 def note_cluster_intensity(loudnessstream, expect_values):
     global server
 
@@ -123,6 +129,7 @@ def note_cluster_intensity(loudnessstream, expect_values):
             time.sleep(0.035+shifted_value)
         #time.sleep(0.2)
 
+# Mapping #6 - Granular Synthesis Spatialization 4 qubits
 def granular_triggers(loudnessstream, expect_values):
     global server
 
@@ -144,12 +151,13 @@ def granular_triggers(loudnessstream, expect_values):
         time.sleep(0.1)
 
 
-
+# Function called by the main script
 def sonify(loudnessstream, expect_values, son_type=1):
     
     global server
 
     server = Server()
+    # Parse mapping type
     if son_type == 1:
         note_loudness_multiple(loudnessstream)
     elif son_type == 2:
@@ -163,6 +171,7 @@ def sonify(loudnessstream, expect_values, son_type=1):
     elif son_type == 6:
         granular_triggers(loudnessstream, expect_values)
 
+# Ctrl - . equivalent to kill sounds in SC
 def freeall():
     global server
 

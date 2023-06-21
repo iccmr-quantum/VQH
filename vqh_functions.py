@@ -1,5 +1,4 @@
 from qiskit.algorithms.minimum_eigensolvers import VQE
-from qiskit.algorithms.optimizers import COBYLA
 from qiskit_aer.primitives import Sampler
 from qiskit.circuit.library import EfficientSU2
 from qiskit_optimization import QuadraticProgram
@@ -22,7 +21,7 @@ from shutil import copy2
 
 mpl.rcParams['toolbar'] = 'None'
 
-level = logging.DEBUG
+level = logging.WARNING
 
 fmt = logging.Formatter('[%(levelname)s]:%(name)s - %(message)s')
 handler = logging.StreamHandler()
@@ -35,6 +34,28 @@ logger.addHandler(handler)
 global PATH
 
 def build_qubos_from_csv(n_of_ham=4, n_of_notes=12):
+    '''Builds a list of qubos from a csv file. 
+    The csv file must be in the same folder as this script and must be named 
+    "h_setup.csv". The csv file must have the following format:
+    
+    h1,label1,label2,label3,...,labeln
+    label1,c11,c12,c13,...,c1n
+    label2,c21,c22,c23,...,c2n
+    label3,c31,c32,c33,...,c3n
+    ...
+    labeln,cn1,cn2,cn3,...,cnn
+    h2,label1,label2,label3,...,labeln
+    label1,c11,c12,c13,...,c1n
+    ...
+    
+    where h1, h2, ... are the QUBO matrices names and label1, label2, ... are the
+    note labels used by the sonification.
+
+    The function returns a list of qubos of the form:
+    [{(note_1, note_2): coupling, ...}, ...]
+    where note_1 and note_2 are the note labels with its corresponding coupling
+    coefficients.
+    '''
 
     with open("h_setup.csv", 'r') as hcsv:
         hsetup = list(csv.reader(hcsv, delimiter=','))
@@ -47,12 +68,11 @@ def build_qubos_from_csv(n_of_ham=4, n_of_notes=12):
     for h in range(n_of_ham):
         notes = hsetup.pop(h*n_of_notes)[1:]
         qubos.append({(row[0], notes[i]): float(n) for row in hsetup[h*n_of_notes:h*n_of_notes+n_of_notes] for i, n in enumerate(row[1:])})
-    #logger.debug(f'QUBOS: {qubos}')
+    logger.debug(f'QUBOS: {qubos}')
 
     return qubos
 
-
-def qubo_to_operator_quadratic_program(qubo):
+def qubo_to_operator_quadratic_program(qubo): # Deprecated Function. replaced by 'qubo_to_operator()'
     '''Translate qubo of format {(note_1, note_2): coupling, ...} to operator to be used in VQE this yields diagonal Hamiltonians only'''
 
     notes = []
@@ -76,7 +96,7 @@ def qubo_to_operator_quadratic_program(qubo):
 
     return operator, variables_index
 
-def H_Ising(N,J,hx):# Arianna Crippa's Ising model implementation
+def H_Ising(N,J,hx):# Arianna Crippa's Ising model implementation for comparison and debugging
     # Ising model H
     H_Ising=0
     for n in range(1,N):
@@ -90,7 +110,15 @@ def H_Ising(N,J,hx):# Arianna Crippa's Ising model implementation
     return H_Ising
 
 def qubo_to_operator(qubo, count, linear_pauli='Z', external_field=+0.6):
-    '''Translate qubo of format {(note_1, note_2): coupling, ...} to operator to be used in VQE. This function can yield non-diagonal Hamiltonians.'''
+    '''Translates qubo problems of format {(note_1, note_2): coupling, ...} to operators to be used in VQE.
+    This function can yield non-diagonal Hamiltonians.
+    
+    The resulting Hamitonian H is equal to the QUBO Q up to a constant factor 
+    and a constant shift that do not impact the optimization
+    H = 4*Q + const
+    Q = H/4 - const/4 = operator + offset
+    
+    '''
 
    # First, we need to create a dictionary that maps the variables to their index in the operator
    # We make sure that the qubo is symmetric and that we only have one term for each pair of variables
@@ -150,24 +178,21 @@ def qubo_to_operator(qubo, count, linear_pauli='Z', external_field=+0.6):
             else:
                 paulis[pauli] = -value
             const += -value
-    # pauli_list = [(k, v) for k, v in paulis.items()]
-    # H = PauliSumOp(SparsePauliOp.from_list(pauli_list))
-    # This Hamitonian H is equal to the QUBO Q up to a constant factor and a constant shift that do not impact the optimization
-    # H = 4*Q + const
-    # Q = H/4 - const/4 = operator + offset
-    pauli_list = [(k, round(v/4,8)) for k, v in paulis.items()]
+    pauli_list = [(k, v) for k, v in paulis.items()]
+    #pauli_list = [(k, round(v/4,8)) for k, v in paulis.items()]
     # external magnetic field in X direction
-    #pauli_list.append(('X'*num_qubits, external_field))
     for i in range(num_qubits):
         paulix = 'I'*i + 'X' + 'I'*(num_qubits-i-1)
         pauli_list.append((paulix, external_field))
         #pauli_list.append((paulix, external_field-0.2*count))
     operator = PauliSumOp(SparsePauliOp.from_list(pauli_list))
-    offset = -const/4
-
-    operator2 = H_Ising(8, 1, external_field+0.2*count) # Compare H with Arianna's Ising operator
+    offset = -const/4 # for future reference
     print(f'Operator: \n{operator}')
-    #print(f'Ising: \n{operator2}')
+     
+    # Compare H with Arianna's Ising operator
+    # operator2 = H_Ising(8, 1, external_field+0.2*count)
+    # print(f'Ising: \n{operator2}')
+    
     return operator, variables_index
 
 
@@ -189,9 +214,13 @@ def return_optimizer(optimizer_name, maxiter):
 
 
 def run_sampling_vqe(ansatz, operator, optimizer, initial_point):
+    '''Runs VQE and samples the wavefunction at each iteration'''
+
+
     binary_probabilities = []
     expectation_values = []
 
+    #VQE Iteration.
     def evaluate_expectation_value(ansatz, params, operator):
         ansatz_temp = copy.deepcopy(ansatz)
         ansatz_temp.measure_all()
@@ -205,6 +234,8 @@ def run_sampling_vqe(ansatz, operator, optimizer, initial_point):
         for key, value in sample_energy.items():
             probablility = sample_binary_probabilities[key]
             expectation_value += value*probablility
+        # The statevector and expectation values are collected at each iteration
+        # for sonification
         binary_probabilities.append(sample_binary_probabilities)
         expectation_values.append(np.real(expectation_value))
         return np.real(expectation_value)
@@ -221,7 +252,7 @@ def run_sampling_vqe(ansatz, operator, optimizer, initial_point):
 
 
 def binary_probabilities_to_loudness(binary_probabilities, variables_index):
-    '''Convert binary probabilities to loudness'''
+    ''' Obtain marginal probabilities for each note, interpreted as loudnesses'''
 
     loudnesses = {v: np.zeros(len(binary_probabilities))
                   for v in variables_index}
@@ -236,7 +267,8 @@ def binary_probabilities_to_loudness(binary_probabilities, variables_index):
 
 
 def loudnesses_to_list_of_dicts(loudnesses):
-    '''Convert loudnesses to list of dicts, where each dict contains the loudness of each note for a given iteration'''
+    '''Convert marginal probabilities/loudnesses (a dict of lists) to list of dicts,
+    where each dict contains the loudness of each note/label for a given iteration'''
     loudness_list_of_dicts = []
     for note, loudness_list in loudnesses.items():
         for i, loudness in enumerate(loudness_list):
@@ -246,48 +278,60 @@ def loudnesses_to_list_of_dicts(loudnesses):
     return loudness_list_of_dicts
 
 def compute_exact_solution(operator):
-    '''Minimum eigenvalue computed using NumPyMinimumEigensolver'''
+    '''Minimum eigenvalue computed using NumPyMinimumEigensolver
+    for comparison with VQE'''
     eigensolver = NumPyMinimumEigensolver()
     result = eigensolver.compute_minimum_eigenvalue(operator)
 
     return result
 
-
+# Main function
 def harmonize(qubos, **kwargs):
     '''Run harmonizer algorithm for list of qubos and list of iterations. VQE is performed for the i-th qubo for i-th number of iterations.'''
-    # loop over qubos
     global PATH
     QD = []
     max_state = []
     valuess = []
     loudnesses = {}
     operatorss = []
+    # loop over qubos
     for count, qubo in enumerate(qubos):
         print(f'Working on hamiltonian #{count}')
+        
+        # Qubo to Hamiltonian
         operator, variables_index = qubo_to_operator(qubo, count)
         #logger.debug(f'operator: {operator}')
+        
+        #Optimizer
         optimizer = return_optimizer(
             kwargs['optimizer_name'], kwargs['iterations'][count])
         ansatz = EfficientSU2(num_qubits=len(
             variables_index), reps=kwargs['reps'], entanglement=kwargs['entanglement'])
+        
+        # Initial point
         if count == 0:
-            #initial_point = np.zeros(ansatz.num_parameters)
-            initial_point = -0.5*np.ones(ansatz.num_parameters)
-            print(initial_point)
+            initial_point = np.zeros(ansatz.num_parameters)
+            #initial_point = -0.5*np.ones(ansatz.num_parameters)
+            #print(initial_point)
         # copy ansatz to avoid VQE changing it
         ansatz_temp = copy.deepcopy(ansatz)
         result, binary_probabilities, expectation_values = run_sampling_vqe(
                 ansatz_temp, operator, optimizer, initial_point)
         valuess.extend(expectation_values)
+        # Classical expectation value solution
         numpy_result = compute_exact_solution(operator)
         print("VQE RESULT", result.fun)
         #print("VQE BIN PROB", binary_probabilities)
         print("CLASSICAL SOLUTION",numpy_result.eigenvalue)
+
+        # For each itetation, the most probable state is collected.
+        # Also used for sonification mapping
         for binary_probability in binary_probabilities:
             QD.append(binary_probability)
             max_state.append(
                 max(binary_probability, key=binary_probability.get))
-        if count == 0:
+        # Obtain marginal probabilities
+        if count == 0: 
             loudnesses = binary_probabilities_to_loudness(
                 binary_probabilities, variables_index)
         else:
@@ -295,10 +339,14 @@ def harmonize(qubos, **kwargs):
                 binary_probabilities, variables_index)
             for key, value in loudnesses_temp.items():
                 loudnesses[key] = np.append(loudnesses[key], value)
-        # set initital point for next qubo to be the optimal point of the previous qubo
+
+        # Set initital point for next qubo to be the optimal point of the previous qubo
         initial_point = result.x
 
         operatorss.append([[n.to_instruction().params[0], operator.coeffs[i]] for i, n in enumerate(operator.to_pauli_op().oplist)])
+
+        
+        # Save data
 
         os.makedirs(PATH, exist_ok=True)
         with open(f"{PATH}/rawdata.json", 'w') as rawfile:
@@ -321,6 +369,7 @@ def harmonize(qubos, **kwargs):
 
 
 def plot_values(values):
+    '''Plot expectation values'''
     global PATH
     plt.figure()
     # print(values)
@@ -330,6 +379,7 @@ def plot_values(values):
 
 
 def plot_loudness(loudnesses):
+    '''Plot marginal probabilities/loudnesses'''
     global PATH
     # print(loudnesses)
     fig = plt.figure()
@@ -340,9 +390,13 @@ def plot_loudness(loudnesses):
     ax = fig.add_subplot(111)
     ax.patch.set_facecolor('#243131')
     ax.patch.set_alpha(0.5)
+
+    # Different color styles for Debugging, Dependent Origination and ISQCMC Paper
     ax.set_prop_cycle(cycler('color', ['#a0dece', '#f7f7c1', '#f7f797', '#f5f56c', '#26c2d4', '#f883fc', '#baba2f', '#b4d4dc', '#96961b', '#bf1fc4', '#6b6b05', '#595900']))
     #ax.set_prop_cycle(cycler('color', ['#a0dece', '#f7f7c1', '#f7f797', '#f5f56c', '#26c2d4', '#d6d649', '#baba2f', '#b4d4dc', '#96961b', '#80800d', '#6b6b05', '#595900']))
     #ax.set_prop_cycle(cycler('color', ['#93abbe', '#202a23', '#c4c9d5', '#425547', '#336068', '#577b7d', '#4e656f', '#b4d4dc']))
+    
+    # Save plot
     for k in loudnesses:
         plt.plot(loudnesses[k])
     plt.legend(list(loudnesses.keys()), facecolor='#243131', edgecolor='white')
@@ -350,18 +404,24 @@ def plot_loudness(loudnesses):
     plt.show()
 
 
-def run_vqh(sessionname):
+def run_vqh(sessionname): # Function called by the main script for experiments and performance sessions
     global PATH
+
+    # Load latest config file
     with open("vqe_conf.json") as cfile:
         config = json.load(cfile)
 
     PATH = f"{sessionname}/Data_{config['nextpathid']}"
+    # Read QUBOs from 'h_setup.csv'
     qubos = build_qubos_from_csv(config["sequence_length"], config["size"])
+    # Obtain sonification parameters
     loudnesses, values, states = harmonize(qubos, **config)
     loudness_list_of_dicts = loudnesses_to_list_of_dicts(loudnesses)
     # logger.debug(loudness_list_of_dicts)
 
     #plot_values(values)
+
+    # Save data
     with open(f"{PATH}/aggregate_data.json", 'w') as aggfile:
         json.dump(loudness_list_of_dicts, aggfile, indent=4)
 
@@ -372,71 +432,24 @@ def run_vqh(sessionname):
 
     norm_values = (values - min(values))/(abs(max(values)-min(values)))
     #print(type(states), type(norm_values.tolist()), loudnesses)
-    origination = {"states": states, "amps": loudness_list_of_dicts, "values": norm_values.tolist()}
-    with open(f"{sessionname}/to_pete/dependent_origination.json", 'r') as dofile:
-        old_data = json.load(dofile)
 
-    #print(old_data)
-    old_data[f"data_{config['nextpathid']}"] = origination
+    # Dependent Origination related code --------------------
+    # origination = {"states": states, "amps": loudness_list_of_dicts, "values": norm_values.tolist()}
+    # with open(f"{sessionname}/to_pete/dependent_origination.json", 'r') as dofile:
+        # old_data = json.load(dofile)
+
+    # #print(old_data)
+    # old_data[f"data_{config['nextpathid']}"] = origination
+    # with open(f"{sessionname}/to_pete/dependent_origination.json", 'w') as dofile:
+        # json.dump(old_data, dofile, indent=4)
+    # -------------------------------------------------------
+
+    # Prepare next run
     config['nextpathid'] += 1
     with open("vqe_conf.json", 'w') as cfile:
         json.dump(config, cfile, indent=4)
 
-    with open(f"{sessionname}/to_pete/dependent_origination.json", 'w') as dofile:
-        json.dump(old_data, dofile, indent=4)
-
+    # Plot loudnesses (Dependent Origination)
     plot_loudness(loudnesses)
     return loudness_list_of_dicts, values
 
-
-def test_harmonize():
-
-    global PATH
-
-    PATH = "Data/Test"
-    # specify all possible notes. This is one octave. For more octaves, just add more notes.
-    notes = ['c', 'c#', 'd', 'd#', 'e', 'f', 'f#', 'g', 'g#', 'a', 'a#', 'b']
-    config = {
-        'reps': 1,
-        'entanglement': 'linear',
-        'optimizer_name': 'COBYLA',
-        'iterations': [64, 64, 64, 64]
-    }
-    # example simple c major. Different Hamiltonians with superposition of chords as ground state are possible.
-    # beneficial negative weights for desired notes
-    c_major = {
-        ('c', 'c'): -1.,
-        ('e', 'e'): -1.,
-        ('g', 'g'): -1.,
-    }
-    # penalty for other notes
-    # make sure all notes are defined in the qubo
-    notes = ['c', 'c#', 'd', 'd#', 'e', 'f', 'f#', 'g', 'g#', 'a', 'a#', 'b']
-    for note in notes:
-        if (note, note) not in c_major:
-            c_major[(note, note)] = 1.
-
-    f_major = {
-        ('f', 'f'): -1.,
-        ('a', 'a'): -1.,
-        ('c', 'c'): -1.,
-    }
-    for note in notes:
-        if (note, note) not in f_major:
-            f_major[(note, note)] = 1.
-
-    g_major = {
-        ('g', 'g'): -1.,
-        ('b', 'b'): -1.,
-        ('d', 'd'): -1.,
-    }
-    for note in notes:
-        if (note, note) not in g_major:
-            g_major[(note, note)] = 1.
-
-    qubos = [c_major, g_major, f_major, c_major]
-    # logger.debug(qubos)
-    loudnesses, values = harmonize(qubos, **config)
-    loudness_list_of_dicts = loudnesses_to_list_of_dicts(loudnesses)
-
-    return loudness_list_of_dicts
