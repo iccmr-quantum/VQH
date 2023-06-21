@@ -4,6 +4,7 @@ from qiskit_aer.primitives import Sampler
 from qiskit.circuit.library import EfficientSU2
 from qiskit_optimization import QuadraticProgram
 from qiskit.algorithms.optimizers import COBYLA, NFT, SPSA, TNC, SLSQP
+from qiskit.algorithms.minimum_eigensolvers import NumPyMinimumEigensolver
 from qiskit.quantum_info import SparsePauliOp
 from qiskit.opflow.primitive_ops import PauliSumOp
 from qiskit.opflow import X, Z, I, Y
@@ -88,7 +89,7 @@ def H_Ising(N,J,hx):# Arianna Crippa's Ising model implementation
 
     return H_Ising
 
-def qubo_to_operator(qubo, count, linear_pauli='Z', external_field=-0.2):
+def qubo_to_operator(qubo, count, linear_pauli='Z', external_field=+0.6):
     '''Translate qubo of format {(note_1, note_2): coupling, ...} to operator to be used in VQE. This function can yield non-diagonal Hamiltonians.'''
 
    # First, we need to create a dictionary that maps the variables to their index in the operator
@@ -244,6 +245,13 @@ def loudnesses_to_list_of_dicts(loudnesses):
             loudness_list_of_dicts[i][note] = loudness
     return loudness_list_of_dicts
 
+def compute_exact_solution(operator):
+    '''Minimum eigenvalue computed using NumPyMinimumEigensolver'''
+    eigensolver = NumPyMinimumEigensolver()
+    result = eigensolver.compute_minimum_eigenvalue(operator)
+
+    return result
+
 
 def harmonize(qubos, **kwargs):
     '''Run harmonizer algorithm for list of qubos and list of iterations. VQE is performed for the i-th qubo for i-th number of iterations.'''
@@ -263,14 +271,18 @@ def harmonize(qubos, **kwargs):
         ansatz = EfficientSU2(num_qubits=len(
             variables_index), reps=kwargs['reps'], entanglement=kwargs['entanglement'])
         if count == 0:
-            initial_point = np.zeros(ansatz.num_parameters)
-            #initial_point = -0.5*np.ones(ansatz.num_parameters)
+            #initial_point = np.zeros(ansatz.num_parameters)
+            initial_point = -0.5*np.ones(ansatz.num_parameters)
             print(initial_point)
         # copy ansatz to avoid VQE changing it
         ansatz_temp = copy.deepcopy(ansatz)
         result, binary_probabilities, expectation_values = run_sampling_vqe(
                 ansatz_temp, operator, optimizer, initial_point)
         valuess.extend(expectation_values)
+        numpy_result = compute_exact_solution(operator)
+        print("VQE RESULT", result.fun)
+        #print("VQE BIN PROB", binary_probabilities)
+        print("CLASSICAL SOLUTION",numpy_result.eigenvalue)
         for binary_probability in binary_probabilities:
             QD.append(binary_probability)
             max_state.append(
@@ -328,7 +340,9 @@ def plot_loudness(loudnesses):
     ax = fig.add_subplot(111)
     ax.patch.set_facecolor('#243131')
     ax.patch.set_alpha(0.5)
-    ax.set_prop_cycle(cycler('color', ['#93abbe', '#202a23', '#c4c9d5', '#425547', '#336068', '#577b7d', '#4e656f', '#b4d4dc']))
+    ax.set_prop_cycle(cycler('color', ['#a0dece', '#f7f7c1', '#f7f797', '#f5f56c', '#26c2d4', '#f883fc', '#baba2f', '#b4d4dc', '#96961b', '#bf1fc4', '#6b6b05', '#595900']))
+    #ax.set_prop_cycle(cycler('color', ['#a0dece', '#f7f7c1', '#f7f797', '#f5f56c', '#26c2d4', '#d6d649', '#baba2f', '#b4d4dc', '#96961b', '#80800d', '#6b6b05', '#595900']))
+    #ax.set_prop_cycle(cycler('color', ['#93abbe', '#202a23', '#c4c9d5', '#425547', '#336068', '#577b7d', '#4e656f', '#b4d4dc']))
     for k in loudnesses:
         plt.plot(loudnesses[k])
     plt.legend(list(loudnesses.keys()), facecolor='#243131', edgecolor='white')

@@ -42,7 +42,7 @@ def note_loudness_multiple(loudnessstream):
         print(state)
         for k, amp in state.items():
             synth.set(NOTESDICT[k], amp)
-        time.sleep(0.1)
+        time.sleep(0.03)
 
 def note_loudness_multiple_rs(loudnessstream, expect_values):
     global server, NOTESDICT
