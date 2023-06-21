@@ -91,25 +91,26 @@ def playfile(num, folder, son_type=1):
 def is_command(cmd):
     return cmd.split(' ')[0] in VALID_COMMANDS
     
-def CLI(BACKEND):
+def CLI():
     global progQuit, comp, last, reset, generated_quasi_dist, comp_events
     generated_quasi_dist = []
     
     #print("here")
-    try:
-        ce = DictReader(open("comp_events_template.csv"), skipinitialspace=True)
-        #print(ce)
-        open('composition_template.json', 'w')
-    except:
-        print("not successfulk")
-    if os.path.exists('composition_template.json'):
-        update_compfile()
-        with open('composition_template.json') as compfile:
-            composition = json.load(compfile)
-            comp_events = deque([int(x) for x in composition])
-            #logger.debug(f'LOADED COMPOSITION: {composition}')
-            reset = True
-
+# Future work: creating, managing music compositions, rehearsal and performance ----------------------------
+    # try:
+        # ce = DictReader(open("comp_events_template.csv"), skipinitialspace=True)
+        # #print(ce)
+        # open('composition_template.json', 'w')
+    # except:
+        # print("not successfulk")
+    # if os.path.exists('composition_template.json'):
+        # update_compfile()
+        # with open('composition_template.json') as compfile:
+            # composition = json.load(compfile)
+            # comp_events = deque([int(x) for x in composition])
+            # #logger.debug(f'LOADED COMPOSITION: {composition}')
+            # reset = True
+# ----------------------------------------------------------------------------------------------------------
     #print("here")
     # prompt preparation
     session = PromptSession()
@@ -269,7 +270,7 @@ CSV QUBOS syntax and rules:\n\
 - File name MUST BE "h_setup.csv"\n\
 - QUBO matrices should be exactly as the one below.\n\
 The header should contain the matrix name and note labels.\n\
-NO SPACE between commas for header and labels!\n\ 
+NO SPACE between commas for header and labels!\n\
 Spaces allowed only for number entries. See "h_setup-Example.csv"\n\
     h1,label1,label2,label3,...,labeln\n\
     label1,c11,c12,c13,...,c1n\n\
@@ -289,8 +290,7 @@ Internal VQH functions:\n\
                         the session folder. The file index is the first \n\
                         argument. The second argument is the sonification \n\
 => stop                 Stops all sound in SuperCollider.\n\
-=> quit, q              Exits the program.\n\
-    '
+=> quit, q              Exits the program.\n '
 
 
     p = argparse.ArgumentParser(description=descr, formatter_class=RawDescriptionHelpFormatter)
@@ -304,10 +304,11 @@ Internal VQH functions:\n\
 
 
     print('=====================================================')
-    print('         VQH: Variational Quantum Harmonizer         ')
-    print('     v1.0   -   by itaborala and schwaeti, 2023      ')
-    print('         https://github.com/iccmr-quantum/VQH        ')
+    print('      VQH: Variational Quantum Harmonizer  - v1.0    ') 
+    print('          by itaborala and schwaeti, 2023            ')
+    print('                             ICCMR + DESY            ') 
+    print('     https://github.com/iccmr-quantum/VQH            ')
     print('=====================================================')
 
     # Run CLI
-    CLI(args.backend)
+    CLI()
