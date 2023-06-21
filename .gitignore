@@ -9,5 +9,7 @@ Session*/
 DependentOrigination*/
 Saber*/
 h_setup_*
+h1_*
+h2_*
 Recordings/
 sort_paulis.py
