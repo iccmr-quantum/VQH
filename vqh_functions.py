@@ -20,6 +20,7 @@ import os
 from shutil import copy2
 
 mpl.rcParams['toolbar'] = 'None'
+mpl.rcParams['lines.linewidth'] = .8
 
 level = logging.WARNING
 
@@ -32,6 +33,13 @@ logger.addHandler(handler)
 
 
 global PATH
+
+#color_mode = 'quadratic_debug'
+#color_mode = 'isqcmc'
+color_mode = 'isqcmc_cmajor'
+global COLORSCHEME
+with open('plot_colors.json', 'r') as f:
+    COLORSCHEME = json.load(f)[color_mode]
 
 def build_qubos_from_csv(n_of_ham=4, n_of_notes=12):
     '''Builds a list of qubos from a csv file. 
@@ -109,7 +117,7 @@ def H_Ising(N,J,hx):# Arianna Crippa's Ising model implementation for comparison
 
     return H_Ising
 
-def qubo_to_operator(qubo, count, linear_pauli='Z', external_field=+0.6):
+def qubo_to_operator(qubo, count, linear_pauli='Z', external_field=0):
     '''Translates qubo problems of format {(note_1, note_2): coupling, ...} to operators to be used in VQE.
     This function can yield non-diagonal Hamiltonians.
     
@@ -223,16 +231,22 @@ def run_sampling_vqe(ansatz, operator, optimizer, initial_point):
     #VQE Iteration.
     def evaluate_expectation_value(ansatz, params, operator):
         ansatz_temp = copy.deepcopy(ansatz)
+        #print(f'Parameters: {params}')
         ansatz_temp.measure_all()
         sample = sampler.run(circuits=ansatz_temp,
                              parameter_values=params).result()
         sample_binary_probabilities = sample.quasi_dists[0].binary_probabilities(
         )
+        #print(f'Sample: {sample_binary_probabilities}')
+        #for key in sample_binary_probabilities:
+            #print(operator.eval(key))
         sample_energy = {key: np.real(operator.eval(key).eval(
             key)) for key in sample_binary_probabilities}
+        #print(f'Energy: {sample_energy}')
         expectation_value = 0.
         for key, value in sample_energy.items():
             probablility = sample_binary_probabilities[key]
+            #print(f'Probability, Value: {probablility}, {value}')
             expectation_value += value*probablility
         # The statevector and expectation values are collected at each iteration
         # for sonification
@@ -307,14 +321,17 @@ def harmonize(qubos, **kwargs):
             kwargs['optimizer_name'], kwargs['iterations'][count])
         ansatz = EfficientSU2(num_qubits=len(
             variables_index), reps=kwargs['reps'], entanglement=kwargs['entanglement'])
+        #print(f'ansatz: {ansatz.draw()}')
+        #print(f'variables_index: {variables_index}')
         
         # Initial point
         if count == 0:
-            initial_point = np.zeros(ansatz.num_parameters)
-            #initial_point = -0.5*np.ones(ansatz.num_parameters)
+            #initial_point = np.zeros(ansatz.num_parameters)
+            initial_point = -0.5*np.ones(ansatz.num_parameters)
             #print(initial_point)
         # copy ansatz to avoid VQE changing it
         ansatz_temp = copy.deepcopy(ansatz)
+        #print(f'inital point: {initial_point}')
         result, binary_probabilities, expectation_values = run_sampling_vqe(
                 ansatz_temp, operator, optimizer, initial_point)
         valuess.extend(expectation_values)
@@ -322,6 +339,7 @@ def harmonize(qubos, **kwargs):
         numpy_result = compute_exact_solution(operator)
         print("VQE RESULT", result.fun)
         #print("VQE BIN PROB", binary_probabilities)
+        #print("VQE EXPECTATION VALUES", expectation_values)
         print("CLASSICAL SOLUTION",numpy_result.eigenvalue)
 
         # For each itetation, the most probable state is collected.
@@ -371,37 +389,52 @@ def harmonize(qubos, **kwargs):
 def plot_values(values):
     '''Plot expectation values'''
     global PATH
-    plt.figure()
+    global COLORSCHEME
+    vfig = plt.figure()
     # print(values)
-    plt.plot(values, color='sandybrown')
+    plt.plot(values, color=COLORSCHEME['valuecolor'])
     plt.savefig(f"{PATH}/values_plot", dpi=300)
+    vfig.clear()
     # plt.show()
 
 
 def plot_loudness(loudnesses):
     '''Plot marginal probabilities/loudnesses'''
     global PATH
+    global COLORSCHEME
     # print(loudnesses)
     fig = plt.figure()
     plt.ioff()
     rect = fig.patch
     #rect.set_alpha(0.5)
-    rect.set_facecolor('#3a3f43')
+    rect.set_facecolor(COLORSCHEME['background'])
     ax = fig.add_subplot(111)
-    ax.patch.set_facecolor('#243131')
-    ax.patch.set_alpha(0.5)
+    ax.patch.set_facecolor(COLORSCHEME['facecolor'])
+    ax.patch.set_alpha(COLORSCHEME['alpha'])
 
     # Different color styles for Debugging, Dependent Origination and ISQCMC Paper
-    ax.set_prop_cycle(cycler('color', ['#a0dece', '#f7f7c1', '#f7f797', '#f5f56c', '#26c2d4', '#f883fc', '#baba2f', '#b4d4dc', '#96961b', '#bf1fc4', '#6b6b05', '#595900']))
+    #ax.set_prop_cycle(cycler('color', ['#a0dece', '#f7f7c1', '#f7f797', '#f5f56c', '#26c2d4', '#f883fc', '#baba2f', '#b4d4dc', '#96961b', '#bf1fc4', '#6b6b05', '#595900']))
+    ax.set_prop_cycle(cycler('color', COLORSCHEME['chordcolors']))
     #ax.set_prop_cycle(cycler('color', ['#a0dece', '#f7f7c1', '#f7f797', '#f5f56c', '#26c2d4', '#d6d649', '#baba2f', '#b4d4dc', '#96961b', '#80800d', '#6b6b05', '#595900']))
     #ax.set_prop_cycle(cycler('color', ['#93abbe', '#202a23', '#c4c9d5', '#425547', '#336068', '#577b7d', '#4e656f', '#b4d4dc']))
     
     # Save plot
     for k in loudnesses:
         plt.plot(loudnesses[k])
-    plt.legend(list(loudnesses.keys()), facecolor='#243131', edgecolor='white')
-    plt.savefig(f"{PATH}/loudness_plot", dpi=300)
+    plt.legend(list(loudnesses.keys()), facecolor=COLORSCHEME['legendfacecolor'], edgecolor=COLORSCHEME['legendedgecolor'], loc='lower center', bbox_to_anchor=(0.5, 0), ncols=6, fontsize=9)
+    plt.xlabel('Iteration')
+    plt.ylabel('"Loudnesses"')
+    print(plt.ylim())
+
+    ylimit = plt.ylim()
+    yrange = ylimit[1] - ylimit[0]
+    plt.ylim(bottom=ylimit[0] - 0.1*yrange)
+
+    
+    #plt.title('Marginal Distribution Evolution')
+    plt.savefig(f"{PATH}/loudness_plot", dpi=300, bbox_inches='tight')
     plt.show()
+    fig.clear()
 
 
 def run_vqh(sessionname): # Function called by the main script for experiments and performance sessions
@@ -419,7 +452,6 @@ def run_vqh(sessionname): # Function called by the main script for experiments a
     loudness_list_of_dicts = loudnesses_to_list_of_dicts(loudnesses)
     # logger.debug(loudness_list_of_dicts)
 
-    #plot_values(values)
 
     # Save data
     with open(f"{PATH}/aggregate_data.json", 'w') as aggfile:
@@ -451,5 +483,6 @@ def run_vqh(sessionname): # Function called by the main script for experiments a
 
     # Plot loudnesses (Dependent Origination)
     plot_loudness(loudnesses)
+    plot_values(values)
     return loudness_list_of_dicts, values
 

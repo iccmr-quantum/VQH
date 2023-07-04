@@ -1,0 +1,30 @@
+{
+    "quadratic_debug": {
+        "background": "#3a3f43",
+        "facecolor": "#243131",
+        "alpha": 0.5,
+        "chordcolors": ["#a0dece", "#f7f7c1", "#f7f797", "#f5f56c", "#26c2d4", "#f883fc", "#baba2f", "#b4d4dc", "#96961b", "#bf1fc4", "#6b6b05", "#595900"],
+        "valuecolor": "sandybrown",
+        "legendfacecolor": "#243131",
+        "legendedgecolor": "white"
+    },
+    "isqcmc": {
+        "background": "#ffffff",
+        "facecolor": "#ffffff",
+        "alpha": 1,
+        "chordcolors": ["#71a5f0", "#5d98ee", "#498bec", "#347eea", "#2071e8", "#1766db", "#155dc7", "#1353b2", "#104a9e", "#0e408a", "#0c3776", "#0a2d61"],
+        "valuecolor": "sandybrown",
+        "legendfacecolor": "#ffffff",
+        "legendedgecolor": "white"
+    },
+    "isqcmc_cmajor": {
+        "background": "#ffffff",
+        "facecolor": "#ffffff",
+        "alpha": 1,
+        "chordcolors": ["#f07e71", "#5d98ee", "#498bec", "#347eea", "#e83420", "#1766db", "#155dc7", "#b22313", "#104a9e", "#0e408a", "#0c3776", "#0a2d61"],
+        "valuecolor": "sandybrown",
+        "legendfacecolor": "#ffffff",
+        "legendedgecolor": "white"
+    }
+
+}
