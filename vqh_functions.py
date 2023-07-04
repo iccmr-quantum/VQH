@@ -36,7 +36,8 @@ global PATH
 
 #color_mode = 'quadratic_debug'
 #color_mode = 'isqcmc'
-color_mode = 'isqcmc_cmajor'
+#color_mode = 'isqcmc_cmajor'
+color_mode = 'isqcmc_iivvi'
 global COLORSCHEME
 with open('plot_colors.json', 'r') as f:
     COLORSCHEME = json.load(f)[color_mode]
@@ -326,8 +327,8 @@ def harmonize(qubos, **kwargs):
         
         # Initial point
         if count == 0:
-            #initial_point = np.zeros(ansatz.num_parameters)
-            initial_point = -0.5*np.ones(ansatz.num_parameters)
+            initial_point = np.zeros(ansatz.num_parameters)
+            #initial_point = -0.5*np.ones(ansatz.num_parameters)
             #print(initial_point)
         # copy ansatz to avoid VQE changing it
         ansatz_temp = copy.deepcopy(ansatz)
@@ -393,6 +394,8 @@ def plot_values(values):
     vfig = plt.figure()
     # print(values)
     plt.plot(values, color=COLORSCHEME['valuecolor'])
+    plt.xlabel('Iteration')
+    plt.ylabel('Expectation Value <H>')
     plt.savefig(f"{PATH}/values_plot", dpi=300)
     vfig.clear()
     # plt.show()

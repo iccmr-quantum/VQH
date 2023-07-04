@@ -25,6 +25,15 @@
         "valuecolor": "sandybrown",
         "legendfacecolor": "#ffffff",
         "legendedgecolor": "white"
+    },
+    "isqcmc_iivvi": {
+        "background": "#ffffff",
+        "facecolor": "#ffffff",
+        "alpha": 1,
+        "chordcolors": ["#f07e71", "#5d98ee", "#49ec59", "#347eea", "#e83420", "#db8b17", "#155dc7", "#b22313", "#104a9e", "#8a580e", "#0c3776", "#0a6113"],
+        "valuecolor": "sandybrown",
+        "legendfacecolor": "#ffffff",
+        "legendedgecolor": "white"
     }
 
 }
