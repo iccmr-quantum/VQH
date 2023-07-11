@@ -34,10 +34,12 @@ logger.addHandler(handler)
 
 global PATH
 
+
+# --------------------- Plotting colorschemes
 #color_mode = 'quadratic_debug'
-#color_mode = 'isqcmc'
+color_mode = 'isqcmc'
 #color_mode = 'isqcmc_cmajor'
-color_mode = 'isqcmc_iivvi'
+#color_mode = 'isqcmc_iivvi'
 global COLORSCHEME
 with open('plot_colors.json', 'r') as f:
     COLORSCHEME = json.load(f)[color_mode]
@@ -128,7 +130,10 @@ def qubo_to_operator(qubo, count, linear_pauli='Z', external_field=0):
     Q = H/4 - const/4 = operator + offset
     
     '''
-
+    # ---- Tests with varying external transverse field
+    #external_field = [0.01, 0.0464, 0.215, 0.8, 1.0, 2.6, 35.0, 100.0] 
+    #external_field = [0.01, 350.0] 
+    #external_field = [0.01, 0.2, 0.4, 0.6, 0.8, 1.0, 1.2, -14000] 
    # First, we need to create a dictionary that maps the variables to their index in the operator
    # We make sure that the qubo is symmetric and that we only have one term for each pair of variables
     qubo_index = {}
@@ -193,14 +198,15 @@ def qubo_to_operator(qubo, count, linear_pauli='Z', external_field=0):
     for i in range(num_qubits):
         paulix = 'I'*i + 'X' + 'I'*(num_qubits-i-1)
         pauli_list.append((paulix, external_field))
+        #pauli_list.append((paulix, -external_field[count]))
         #pauli_list.append((paulix, external_field-0.2*count))
     operator = PauliSumOp(SparsePauliOp.from_list(pauli_list))
     offset = -const/4 # for future reference
     print(f'Operator: \n{operator}')
      
     # Compare H with Arianna's Ising operator
-    # operator2 = H_Ising(8, 1, external_field+0.2*count)
-    # print(f'Ising: \n{operator2}')
+    operator2 = H_Ising(12, 1, external_field)
+    #print(f'Ising: \n{operator2}')
     
     return operator, variables_index
 
@@ -310,6 +316,7 @@ def harmonize(qubos, **kwargs):
     loudnesses = {}
     operatorss = []
     # loop over qubos
+    os.makedirs(PATH, exist_ok=True)
     for count, qubo in enumerate(qubos):
         print(f'Working on hamiltonian #{count}')
         
@@ -322,14 +329,23 @@ def harmonize(qubos, **kwargs):
             kwargs['optimizer_name'], kwargs['iterations'][count])
         ansatz = EfficientSU2(num_qubits=len(
             variables_index), reps=kwargs['reps'], entanglement=kwargs['entanglement'])
-        #print(f'ansatz: {ansatz.draw()}')
+        #print(f'ansatz: {ansatz.decompose().draw()}')
+        #ansatz.draw()
+        #ansatz.draw(output='mpl', filename=f'{PATH}/ansatz_{count}.png')
         #print(f'variables_index: {variables_index}')
         
         # Initial point
         if count == 0:
             initial_point = np.zeros(ansatz.num_parameters)
-            #initial_point = -0.5*np.ones(ansatz.num_parameters)
-            #print(initial_point)
+            #initial_point[0] = -np.pi*1.5
+            #initial_point[0:12] = np.pi/2
+            #initial_point[4] = np.pi
+            #initial_point[7] = np.pi
+            #initial_point[12:24] = np.pi/2
+            #initial_point[24:36] = np.pi/2
+            #initial_point[36:48] = np.pi/2
+            initial_point = (np.pi/4)*np.ones(ansatz.num_parameters)
+            print(initial_point)
         # copy ansatz to avoid VQE changing it
         ansatz_temp = copy.deepcopy(ansatz)
         #print(f'inital point: {initial_point}')
@@ -350,6 +366,7 @@ def harmonize(qubos, **kwargs):
             max_state.append(
                 max(binary_probability, key=binary_probability.get))
         # Obtain marginal probabilities
+        #print("Eigenvector", binary_probabilities[:-1])
         if count == 0: 
             loudnesses = binary_probabilities_to_loudness(
                 binary_probabilities, variables_index)
@@ -367,7 +384,6 @@ def harmonize(qubos, **kwargs):
         
         # Save data
 
-        os.makedirs(PATH, exist_ok=True)
         with open(f"{PATH}/rawdata.json", 'w') as rawfile:
             json.dump(QD, rawfile, indent=4)
         with open(f"{PATH}/max_prob_states.txt", 'w') as maxfile:
