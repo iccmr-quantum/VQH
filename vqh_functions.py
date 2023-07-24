@@ -1,6 +1,6 @@
 from qiskit.algorithms.minimum_eigensolvers import VQE
 from qiskit.algorithms.optimizers import COBYLA
-from qiskit_aer.primitives import Sampler
+from qiskit.primitives import Estimator, Sampler
 from qiskit.circuit.library import EfficientSU2
 from qiskit_optimization import QuadraticProgram
 from qiskit.algorithms.optimizers import COBYLA, NFT, SPSA
@@ -165,29 +165,25 @@ def run_sampling_vqe(ansatz, operator, optimizer, initial_point):
     binary_probabilities = []
     expectation_values = []
 
-    def evaluate_expectation_value(ansatz, params, operator):
+    def cost_function(ansatz, params, operator):
+        ansatz_temp = copy.deepcopy(ansatz)
+        result_estimator = estimator.run(ansatz_temp, operator, parameter_values=params).result()
+        expectation_value = np.real(result_estimator.values[0])
         ansatz_temp = copy.deepcopy(ansatz)
         ansatz_temp.measure_all()
         sample = sampler.run(circuits=ansatz_temp,
                              parameter_values=params).result()
         sample_binary_probabilities = sample.quasi_dists[0].binary_probabilities(
         )
-        sample_energy = {key: np.real(operator.eval(key).eval(
-            key)) for key in sample_binary_probabilities}
-        expectation_value = 0.
-        for key, value in sample_energy.items():
-            probablility = sample_binary_probabilities[key]
-            expectation_value += value*probablility
         binary_probabilities.append(sample_binary_probabilities)
-        expectation_values.append(np.real(expectation_value))
-        return np.real(expectation_value)
+        expectation_values.append(expectation_value)
+        return expectation_value
 
-    sampler = Sampler(
-        backend_options={'method': 'automatic',
-                         'noise_model': None, 'basis_gates': None, 'coupling_map': None},
-        run_options={'shots': 1024})
 
-    result = optimizer.minimize(lambda x: evaluate_expectation_value(
+    estimator = Estimator(options = {'shots': 1024})
+    sampler = Sampler(options = {'shots': 1024})
+
+    result = optimizer.minimize(lambda x: cost_function(
         ansatz=ansatz, params=x, operator=operator), x0=initial_point)
 
     return result, binary_probabilities, expectation_values
