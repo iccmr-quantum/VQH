@@ -1,10 +1,11 @@
 from qiskit.algorithms.minimum_eigensolvers import VQE
-from qiskit_aer.primitives import Sampler
+from qiskit.algorithms.optimizers import COBYLA
+from qiskit.primitives import Estimator, Sampler
 from qiskit.circuit.library import EfficientSU2
 from qiskit_optimization import QuadraticProgram
-from qiskit.algorithms.optimizers import COBYLA, NFT, SPSA, TNC, SLSQP
+from qiskit.algorithms.optimizers import COBYLA, NFT, SPSA, SLSQP
 from qiskit.algorithms.minimum_eigensolvers import NumPyMinimumEigensolver
-from qiskit.quantum_info import SparsePauliOp
+from qiskit.quantum_info import Operator, SparsePauliOp
 from qiskit.opflow.primitive_ops import PauliSumOp
 from qiskit.opflow import X, Z, I, Y
 import matplotlib.pyplot as plt
@@ -83,7 +84,32 @@ def build_qubos_from_csv(n_of_ham=4, n_of_notes=12):
 
     return qubos
 
-def qubo_to_operator_quadratic_program(qubo): # Deprecated Function. replaced by 'qubo_to_operator()'
+def build_operators_from_csv(n_of_ham=2, n_of_notes=8):
+
+    with open("operator_setup.csv", 'r') as hcsv:
+        hsetup = list(csv.reader(hcsv, delimiter=','))
+
+    #header = hsetup.pop(0)
+    #logger.debug(f'CSV Header: {header}')
+    #n_of_ham = int(header[1])
+    #n_of_notes = int(header[2])
+    operators_variables_index = []
+    for h in range(n_of_ham):
+        notes = hsetup.pop(h*n_of_notes)[1:]
+        matrix_dict = {(row[0], notes[i]): float(
+            n) for row in hsetup[h*n_of_notes:h*n_of_notes+n_of_notes] for i, n in enumerate(row[1:])}
+        #logger.debug(f'QUBOS: {qubos}')
+        variables_index = {notes[i]: i for i in range(n_of_notes)}
+        matrix = np.zeros((n_of_notes, n_of_notes))
+        for key, value in matrix_dict.items():
+            matrix[variables_index[key[0]], variables_index[key[1]]] = value
+        operator = SparsePauliOp.from_operator(Operator(matrix))
+        operators_variables_index.append((operator, variables_index))
+
+    return operators_variables_index
+
+
+def qubo_to_operator_quadratic_program(qubo):
     '''Translate qubo of format {(note_1, note_2): coupling, ...} to operator to be used in VQE this yields diagonal Hamiltonians only'''
 
     notes = []
@@ -235,8 +261,10 @@ def run_sampling_vqe(ansatz, operator, optimizer, initial_point):
     binary_probabilities = []
     expectation_values = []
 
-    #VQE Iteration.
-    def evaluate_expectation_value(ansatz, params, operator):
+    def cost_function(ansatz, params, operator):
+        ansatz_temp = copy.deepcopy(ansatz)
+        result_estimator = estimator.run(ansatz_temp, operator, parameter_values=params).result()
+        expectation_value = np.real(result_estimator.values[0])
         ansatz_temp = copy.deepcopy(ansatz)
         #print(f'Parameters: {params}')
         ansatz_temp.measure_all()
@@ -244,29 +272,15 @@ def run_sampling_vqe(ansatz, operator, optimizer, initial_point):
                              parameter_values=params).result()
         sample_binary_probabilities = sample.quasi_dists[0].binary_probabilities(
         )
-        #print(f'Sample: {sample_binary_probabilities}')
-        #for key in sample_binary_probabilities:
-            #print(operator.eval(key))
-        sample_energy = {key: np.real(operator.eval(key).eval(
-            key)) for key in sample_binary_probabilities}
-        #print(f'Energy: {sample_energy}')
-        expectation_value = 0.
-        for key, value in sample_energy.items():
-            probablility = sample_binary_probabilities[key]
-            #print(f'Probability, Value: {probablility}, {value}')
-            expectation_value += value*probablility
-        # The statevector and expectation values are collected at each iteration
-        # for sonification
         binary_probabilities.append(sample_binary_probabilities)
-        expectation_values.append(np.real(expectation_value))
-        return np.real(expectation_value)
+        expectation_values.append(expectation_value)
+        return expectation_value
 
-    sampler = Sampler(
-        backend_options={'method': 'automatic',
-                         'noise_model': None, 'basis_gates': None, 'coupling_map': None},
-        run_options={'shots': 1024})
 
-    result = optimizer.minimize(lambda x: evaluate_expectation_value(
+    estimator = Estimator(options = {'shots': 1024})
+    sampler = Sampler(options = {'shots': 1024})
+
+    result = optimizer.minimize(lambda x: cost_function(
         ansatz=ansatz, params=x, operator=operator), x0=initial_point)
 
     return result, binary_probabilities, expectation_values
@@ -304,10 +318,7 @@ def compute_exact_solution(operator):
     eigensolver = NumPyMinimumEigensolver()
     result = eigensolver.compute_minimum_eigenvalue(operator)
 
-    return result
-
-# Main function
-def harmonize(qubos, **kwargs):
+def harmonize(operators_variables_index, **kwargs):
     '''Run harmonizer algorithm for list of qubos and list of iterations. VQE is performed for the i-th qubo for i-th number of iterations.'''
     global PATH
     QD = []
@@ -315,26 +326,14 @@ def harmonize(qubos, **kwargs):
     valuess = []
     loudnesses = {}
     operatorss = []
-    # loop over qubos
-    os.makedirs(PATH, exist_ok=True)
-    for count, qubo in enumerate(qubos):
+    for count, (operator, variables_index) in enumerate(operators_variables_index):
         print(f'Working on hamiltonian #{count}')
-        
-        # Qubo to Hamiltonian
-        operator, variables_index = qubo_to_operator(qubo, count)
         #logger.debug(f'operator: {operator}')
         
         #Optimizer
         optimizer = return_optimizer(
             kwargs['optimizer_name'], kwargs['iterations'][count])
-        ansatz = EfficientSU2(num_qubits=len(
-            variables_index), reps=kwargs['reps'], entanglement=kwargs['entanglement'])
-        #print(f'ansatz: {ansatz.decompose().draw()}')
-        #ansatz.draw()
-        #ansatz.draw(output='mpl', filename=f'{PATH}/ansatz_{count}.png')
-        #print(f'variables_index: {variables_index}')
-        
-        # Initial point
+        ansatz = EfficientSU2(num_qubits=operator.num_qubits, reps=kwargs['reps'], entanglement=kwargs['entanglement'])
         if count == 0:
             initial_point = np.zeros(ansatz.num_parameters)
             #initial_point[0] = -np.pi*1.5
@@ -464,10 +463,12 @@ def run_vqh(sessionname): # Function called by the main script for experiments a
         config = json.load(cfile)
 
     PATH = f"{sessionname}/Data_{config['nextpathid']}"
-    # Read QUBOs from 'h_setup.csv'
-    qubos = build_qubos_from_csv(config["sequence_length"], config["size"])
-    # Obtain sonification parameters
-    loudnesses, values, states = harmonize(qubos, **config)
+    if config['interface'] == 'qubo':
+        qubos = build_qubos_from_csv(config["sequence_length"], config["size"])
+        operators_variables_index = [qubo_to_operator(qubo) for qubo in qubos]
+    elif config['interface'] == 'operator':
+        operators_variables_index = build_operators_from_csv(config["sequence_length"], config["size"])
+    loudnesses, values = harmonize(operators_variables_index, **config)
     loudness_list_of_dicts = loudnesses_to_list_of_dicts(loudnesses)
     # logger.debug(loudness_list_of_dicts)
 
@@ -504,4 +505,64 @@ def run_vqh(sessionname): # Function called by the main script for experiments a
     plot_loudness(loudnesses)
     plot_values(values)
     return loudness_list_of_dicts, values
+
+
+def test_harmonize():
+
+    global PATH
+
+    PATH = "Data/Test"
+    # specify all possible notes. This is one octave. For more octaves, just add more notes.
+    notes = ['c', 'c#', 'd', 'd#', 'e', 'f', 'f#', 'g', 'g#', 'a', 'a#', 'b']
+    config = {
+        'reps': 1,
+        'entanglement': 'linear',
+        'optimizer_name': 'COBYLA',
+        'iterations': [64, 64, 64, 64]
+    }
+    # example simple c major. Different Hamiltonians with superposition of chords as ground state are possible.
+    # beneficial negative weights for desired notes
+    c_major = {
+        ('c', 'c'): -1.,
+        ('e', 'e'): -1.,
+        ('g', 'g'): -1.,
+    }
+    # penalty for other notes
+    # make sure all notes are defined in the qubo
+    notes = ['c', 'c#', 'd', 'd#', 'e', 'f', 'f#', 'g', 'g#', 'a', 'a#', 'b']
+    for note in notes:
+        if (note, note) not in c_major:
+            c_major[(note, note)] = 1.
+
+    f_major = {
+        ('f', 'f'): -1.,
+        ('a', 'a'): -1.,
+        ('c', 'c'): -1.,
+    }
+    for note in notes:
+        if (note, note) not in f_major:
+            f_major[(note, note)] = 1.
+
+    g_major = {
+        ('g', 'g'): -1.,
+        ('b', 'b'): -1.,
+        ('d', 'd'): -1.,
+    }
+    for note in notes:
+        if (note, note) not in g_major:
+            g_major[(note, note)] = 1.
+
+    qubos = [c_major, g_major, f_major, c_major]
+    # logger.debug(qubos)
+    loudnesses, values = harmonize(qubos, **config)
+    loudness_list_of_dicts = loudnesses_to_list_of_dicts(loudnesses)
+
+    return loudness_list_of_dicts
+
+def compute_exact_solution(operator):
+    '''Minimum eigenvalue computed using NumPyMinimumEigensolver'''
+    eigensolver = NumPyMinimumEigensolver()
+    result = eigensolver.compute_minimum_eigenvalue(operator)
+    
+    return result
 
