@@ -5,7 +5,7 @@ from qiskit.circuit.library import EfficientSU2
 from qiskit_optimization import QuadraticProgram
 from qiskit.algorithms.optimizers import COBYLA, NFT, SPSA
 from qiskit.algorithms.minimum_eigensolvers import NumPyMinimumEigensolver
-from qiskit.quantum_info import SparsePauliOp
+from qiskit.quantum_info import Operator, SparsePauliOp
 from qiskit.opflow.primitive_ops import PauliSumOp
 import matplotlib.pyplot as plt
 import numpy as np
@@ -46,6 +46,30 @@ def build_qubos_from_csv(n_of_ham=4, n_of_notes=12):
     #logger.debug(f'QUBOS: {qubos}')
 
     return qubos
+
+def build_operators_from_csv(n_of_ham=2, n_of_notes=8):
+
+    with open("operator_setup.csv", 'r') as hcsv:
+        hsetup = list(csv.reader(hcsv, delimiter=','))
+
+    #header = hsetup.pop(0)
+    #logger.debug(f'CSV Header: {header}')
+    #n_of_ham = int(header[1])
+    #n_of_notes = int(header[2])
+    operators_variables_index = []
+    for h in range(n_of_ham):
+        notes = hsetup.pop(h*n_of_notes)[1:]
+        matrix_dict = {(row[0], notes[i]): float(
+            n) for row in hsetup[h*n_of_notes:h*n_of_notes+n_of_notes] for i, n in enumerate(row[1:])}
+        #logger.debug(f'QUBOS: {qubos}')
+        variables_index = {notes[i]: i for i in range(n_of_notes)}
+        matrix = np.zeros((n_of_notes, n_of_notes))
+        for key, value in matrix_dict.items():
+            matrix[variables_index[key[0]], variables_index[key[1]]] = value
+        operator = SparsePauliOp.from_operator(Operator(matrix))
+        operators_variables_index.append((operator, variables_index))
+
+    return operators_variables_index
 
 
 def qubo_to_operator_quadratic_program(qubo):
@@ -215,7 +239,7 @@ def loudnesses_to_list_of_dicts(loudnesses):
     return loudness_list_of_dicts
 
 
-def harmonize(qubos, **kwargs):
+def harmonize(operators_variables_index, **kwargs):
     '''Run harmonizer algorithm for list of qubos and list of iterations. VQE is performed for the i-th qubo for i-th number of iterations.'''
     # loop over qubos
     global PATH
@@ -223,14 +247,12 @@ def harmonize(qubos, **kwargs):
     max_state = []
     valuess = []
     loudnesses = {}
-    for count, qubo in enumerate(qubos):
+    for count, (operator, variables_index) in enumerate(operators_variables_index):
         print(f'Working on hamiltonian #{count}')
-        operator, variables_index = qubo_to_operator(qubo)
         #logger.debug(f'operator: {operator}')
         optimizer = return_optimizer(
             kwargs['optimizer_name'], kwargs['iterations'][count])
-        ansatz = EfficientSU2(num_qubits=len(
-            variables_index), reps=kwargs['reps'], entanglement=kwargs['entanglement'])
+        ansatz = EfficientSU2(num_qubits=operator.num_qubits, reps=kwargs['reps'], entanglement=kwargs['entanglement'])
         if count == 0:
             initial_point = np.zeros(ansatz.num_parameters)
         # copy ansatz to avoid VQE changing it
@@ -291,8 +313,12 @@ def run_vqh(sessionname):
         config = json.load(cfile)
 
     PATH = f"{sessionname}/Data_{config['nextpathid']}"
-    qubos = build_qubos_from_csv(config["sequence_length"], config["size"])
-    loudnesses, values = harmonize(qubos, **config)
+    if config['interface'] == 'qubo':
+        qubos = build_qubos_from_csv(config["sequence_length"], config["size"])
+        operators_variables_index = [qubo_to_operator(qubo) for qubo in qubos]
+    elif config['interface'] == 'operator':
+        operators_variables_index = build_operators_from_csv(config["sequence_length"], config["size"])
+    loudnesses, values = harmonize(operators_variables_index, **config)
     loudness_list_of_dicts = loudnesses_to_list_of_dicts(loudnesses)
     # logger.debug(loudness_list_of_dicts)
 
