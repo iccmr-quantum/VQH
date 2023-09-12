@@ -23,7 +23,7 @@ from shutil import copy2
 mpl.rcParams['toolbar'] = 'None'
 mpl.rcParams['lines.linewidth'] = .8
 
-level = logging.WARNING
+level = logging.DEBUG
 
 fmt = logging.Formatter('[%(levelname)s]:%(name)s - %(message)s')
 handler = logging.StreamHandler()
@@ -94,44 +94,51 @@ def build_operators_from_csv(n_of_ham=2, n_of_notes=8):
     #n_of_ham = int(header[1])
     #n_of_notes = int(header[2])
     operators_variables_index = []
+
     for h in range(n_of_ham):
         notes = hsetup.pop(h*n_of_notes)[1:]
         matrix_dict = {(row[0], notes[i]): float(
             n) for row in hsetup[h*n_of_notes:h*n_of_notes+n_of_notes] for i, n in enumerate(row[1:])}
         #logger.debug(f'QUBOS: {qubos}')
         variables_index = {notes[i]: i for i in range(n_of_notes)}
+
+        print(matrix_dict)
+
         matrix = np.zeros((n_of_notes, n_of_notes))
         for key, value in matrix_dict.items():
             matrix[variables_index[key[0]], variables_index[key[1]]] = value
+
+        print(matrix)
         operator = SparsePauliOp.from_operator(Operator(matrix))
+        print(operator)
         operators_variables_index.append((operator, variables_index))
 
     return operators_variables_index
 
 
-def qubo_to_operator_quadratic_program(qubo):
-    '''Translate qubo of format {(note_1, note_2): coupling, ...} to operator to be used in VQE this yields diagonal Hamiltonians only'''
+# def qubo_to_operator_quadratic_program(qubo):
+#     '''Translate qubo of format {(note_1, note_2): coupling, ...} to operator to be used in VQE this yields diagonal Hamiltonians only'''
 
-    notes = []
-    linear = {}
-    quadratic = {}
-    mod = QuadraticProgram('variational_quantum_harmonizer')
-    for key, value in qubo.items():
-        if key[0] not in notes:
-            notes.append(key[0])
-            mod.binary_var(name=key[0])
-        if key[1] not in notes:
-            notes.append(key[1])
-            mod.binary_var(name=key[1])
-        if key[0] == key[1]:
-            linear.update({key[0]: value})
-        else:
-            quadratic.update({key: value})
-    variables_index = mod.variables_index
-    mod.minimize(linear=linear, quadratic=quadratic)
-    operator, offset = mod.to_ising()
+#     notes = []
+#     linear = {}
+#     quadratic = {}
+#     mod = QuadraticProgram('variational_quantum_harmonizer')
+#     for key, value in qubo.items():
+#         if key[0] not in notes:
+#             notes.append(key[0])
+#             mod.binary_var(name=key[0])
+#         if key[1] not in notes:
+#             notes.append(key[1])
+#             mod.binary_var(name=key[1])
+#         if key[0] == key[1]:
+#             linear.update({key[0]: value})
+#         else:
+#             quadratic.update({key: value})
+#     variables_index = mod.variables_index
+#     mod.minimize(linear=linear, quadratic=quadratic)
+#     operator, offset = mod.to_ising()
 
-    return operator, variables_index
+#     return operator, variables_index
 
 def H_Ising(N,J,hx):# Arianna Crippa's Ising model implementation for comparison and debugging
     # Ising model H
@@ -146,7 +153,7 @@ def H_Ising(N,J,hx):# Arianna Crippa's Ising model implementation for comparison
 
     return H_Ising
 
-def qubo_to_operator(qubo, count, linear_pauli='Z', external_field=0):
+def qubo_to_operator(qubo, linear_pauli='Z', external_field=0):
     '''Translates qubo problems of format {(note_1, note_2): coupling, ...} to operators to be used in VQE.
     This function can yield non-diagonal Hamiltonians.
     
@@ -343,7 +350,7 @@ def harmonize(operators_variables_index, **kwargs):
             #initial_point[12:24] = np.pi/2
             #initial_point[24:36] = np.pi/2
             #initial_point[36:48] = np.pi/2
-            initial_point = (np.pi/4)*np.ones(ansatz.num_parameters)
+            #initial_point = (np.pi/4)*np.ones(ansatz.num_parameters)
             print(initial_point)
         # copy ansatz to avoid VQE changing it
         ansatz_temp = copy.deepcopy(ansatz)
@@ -377,6 +384,10 @@ def harmonize(operators_variables_index, **kwargs):
 
         # Set initital point for next qubo to be the optimal point of the previous qubo
         initial_point = result.x
+        
+        #if operator is SparsePauliOp, cast to PauliSumOp. qubo mode needs PauliSumOp  and operator mode needs SparsePauliOp
+        if isinstance(operator, SparsePauliOp):
+            operator = PauliSumOp(operator)
 
         operatorss.append([[n.to_instruction().params[0], operator.coeffs[i]] for i, n in enumerate(operator.to_pauli_op().oplist)])
 
@@ -435,11 +446,20 @@ def plot_loudness(loudnesses):
     ax.set_prop_cycle(cycler('color', COLORSCHEME['chordcolors']))
     #ax.set_prop_cycle(cycler('color', ['#a0dece', '#f7f7c1', '#f7f797', '#f5f56c', '#26c2d4', '#d6d649', '#baba2f', '#b4d4dc', '#96961b', '#80800d', '#6b6b05', '#595900']))
     #ax.set_prop_cycle(cycler('color', ['#93abbe', '#202a23', '#c4c9d5', '#425547', '#336068', '#577b7d', '#4e656f', '#b4d4dc']))
-    
+    color_list = ["green", "blue", "red", "orange", "purple", "brown", "pink", "grey", "black", "yellow", "cyan", "magenta"]
     # Save plot
+    i = 0
     for k in loudnesses:
-        plt.plot(loudnesses[k])
-    plt.legend(list(loudnesses.keys()), facecolor=COLORSCHEME['legendfacecolor'], edgecolor=COLORSCHEME['legendedgecolor'], loc='lower center', bbox_to_anchor=(0.5, 0), ncols=6, fontsize=9)
+        plt.plot(loudnesses[k], color=color_list[i])
+        i += 1
+    #check which ones are below a threshold
+    for k in loudnesses:
+        if np.max(loudnesses[k]) < 0.1:
+            print(k)
+            print(np.max(loudnesses[k]))
+
+
+    plt.legend(list(loudnesses.keys()), facecolor=COLORSCHEME['legendfacecolor'], edgecolor=COLORSCHEME['legendedgecolor'], loc='lower center', bbox_to_anchor=(0.5, 0), fontsize=9)
     plt.xlabel('Iteration')
     plt.ylabel('"Loudnesses"')
     print(plt.ylim())
@@ -463,12 +483,16 @@ def run_vqh(sessionname): # Function called by the main script for experiments a
         config = json.load(cfile)
 
     PATH = f"{sessionname}/Data_{config['nextpathid']}"
+    # if dir doesnt exist, create it
+    if not os.path.exists(PATH):
+        os.makedirs(PATH)
+
     if config['interface'] == 'qubo':
         qubos = build_qubos_from_csv(config["sequence_length"], config["size"])
         operators_variables_index = [qubo_to_operator(qubo) for qubo in qubos]
     elif config['interface'] == 'operator':
         operators_variables_index = build_operators_from_csv(config["sequence_length"], config["size"])
-    loudnesses, values = harmonize(operators_variables_index, **config)
+    loudnesses, values, max_state = harmonize(operators_variables_index, **config)
     loudness_list_of_dicts = loudnesses_to_list_of_dicts(loudnesses)
     # logger.debug(loudness_list_of_dicts)
 

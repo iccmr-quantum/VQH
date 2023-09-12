@@ -3,10 +3,11 @@
     "entanglement": "linear",
     "optimizer_name": "COBYLA",
     "sequence_length": 1,
-    "size": 12,
+    "size": 8,
     "description": "Dependent Matrices",
     "iterations": [
         128
     ],
-    "nextpathid": 37
+    "nextpathid": 64,
+    "interface": "operator"
 }

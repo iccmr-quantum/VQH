@@ -302,7 +302,6 @@ Internal VQH functions:\n\
 
     globalsvqh.SESSIONPATH = args.sessionpath
 
-
     print('=====================================================')
     print('      VQH: Variational Quantum Harmonizer  - v1.0    ') 
     print('          by itaborala and schwaeti, 2023            ')
