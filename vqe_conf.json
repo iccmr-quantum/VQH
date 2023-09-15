@@ -3,10 +3,10 @@
     "entanglement": "linear",
     "optimizer_name": "COBYLA",
     "sequence_length": 1,
-    "size": 12,
-    "description": "Dependent Matrices",
+    "size": 8,
+    "description": "ISQCMC Matrices Transverse Field Phase Transition",
     "iterations": [
-        128
+        64
     ],
-    "nextpathid": 37
+    "nextpathid": 3
 }
