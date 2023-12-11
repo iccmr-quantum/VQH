@@ -3,7 +3,7 @@
 *.pyc
 *.swp
 **_Data/
-Data/
+Data*/
 Untitled.ipynb
 vqe_sounds/
 h_setup_*
