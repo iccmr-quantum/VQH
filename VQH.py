@@ -93,14 +93,54 @@ def playfile(num, folder, son_type=1):
     # logger.debug(f'DOING NOTHING FOR NOW')
 # ----------------------------------------------------------------------------------------------------------
 
+class VQH:
+
+    def __init__(self, protocol_name, hwi_name, soni_name=None):
+        self.hardware_library = HardwareLibrary()
+        self.protocol_library = ProtocolLibrary()
+        #self.sonification_library = SonificationLibrary()
+        
+        self.protocol = self.protocol_library.get_protocol(protocol_name)
+        print(f'Encoding protocol: {self.protocol}')
+        
+        self.hardware_interface = self.hardware_library.get_hardware_interface(hwi_name)
+        self.hardware_interface.connect()
+        self.hardware_interface.get_backend()
+        config.PLATFORM = self.hardware_interface
+
+        print(f'Connected to HWI: {self.hardware_interface}, {self.hardware_interface.provider}, {self.hardware_interface.backend}')
+        
+        self.session_name = None
+
+    def runvqe(self, sessionname = "Default"):
+
+        self.session_name = sessionname
+
+        self.protocol.run(self.session_name)
+    
+    # Play sonification from a previously generated file
+    def playfile(num, folder, son_type=1):
+        path = f"{folder}/Data_{num}"
+        with open(f"{path}/aggregate_data.json") as afile:
+            dist = json.load(afile)
+        with open(f"{path}/exp_values.txt") as efile:
+            vals = [float(val.rstrip()) for val in efile]
+        sc.sonify(dist, vals, son_type)
+                
+    def play(self, son_type=1):
+        generated_quasi_dist, generated_values = self.protocol.data
+        sc.sonify(generated_quasi_dist, generated_values, son_type)
+
+
+
+
 def is_command(cmd):
     return cmd.split(' ')[0] in VALID_COMMANDS
     
-def CLI():
+def CLI(vqh):
     global progQuit, comp, last, reset, generated_quasi_dist, comp_events
     generated_quasi_dist = []
     
-    vqh = config.PROTOCOL
 
     #print("here")
 # Future work: creating, managing music compositions, rehearsal and performance ----------------------------
@@ -221,7 +261,7 @@ def CLI():
             if len(x) == 1:
                 print("running VQE")
                 #generated_quasi_dist, generated_values = vqh.run_vqh(globalsvqh.SESSIONPATH)
-                generated_quasi_dist, generated_values = vqh.run(globalsvqh.SESSIONPATH)
+                vqh.runvqe(globalsvqh.SESSIONPATH)
             else:
                 print('Error! Try Again')
         
@@ -230,7 +270,8 @@ def CLI():
             son_type = 1
             if len(x) == 3:
                 son_type = int(x[2])
-            playfile(x[1], globalsvqh.SESSIONPATH, son_type)
+            #playfile(x[1], globalsvqh.SESSIONPATH, son_type)
+            vqh.playfile(x[1], globalsvqh.SESSIONPATH, son_type)
         
         # Same as using ctrl+. in SuperCollider
         elif x[0] == 'stop':
@@ -242,7 +283,8 @@ def CLI():
                 son_type = 1
                 if len(x) == 2:
                     son_type = int(x[1])
-                sc.sonify(generated_quasi_dist, generated_values, son_type)
+                #sc.sonify(generated_quasi_dist, generated_values, son_type)
+                vqh.play(son_type)
             else:
                 print("Quasi Dists NOT generated!")
 
@@ -315,23 +357,23 @@ Internal VQH functions:\n\
 
     
     config.HW_INTERFACE = args.platform
-    hwi = HardwareLibrary().get_hardware_interface(config.HW_INTERFACE)
-    hwi.connect()
-    hwi.get_backend()
-    config.PLATFORM = hwi
-    print(hwi, hwi.provider, hwi.backend)
+    #hwi = HardwareLibrary().get_hardware_interface(config.HW_INTERFACE)
+    #hwi.connect()
+    #hwi.get_backend()
+    #config.PLATFORM = hwi
+    #print(hwi, hwi.provider, hwi.backend)
 
-    protocol = ProtocolLibrary().get_protocol(args.protocol)
-    config.PROTOCOL = protocol
+    #protocol = ProtocolLibrary().get_protocol(args.protocol)
+    #config.PROTOCOL = protocol
 
-
+    vqh = VQH(args.protocol, args.platform)
 
     print('=====================================================')
-    print('      VQH: Variational Quantum Harmonizer  - v1.0    ') 
+    print('      VQH: Variational Quantum Harmonizer  - v1.1    ') 
     print('          by itaborala and schwaeti, 2023            ')
     print('                             ICCMR + DESY            ') 
     print('     https://github.com/iccmr-quantum/VQH            ')
     print('=====================================================')
 
     # Run CLI
-    CLI()
+    CLI(vqh)

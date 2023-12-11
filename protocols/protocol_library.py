@@ -11,7 +11,7 @@ class ProtocolLibrary():
         """
         protocol = self._protocols.get(protocol_name)
         if not protocol:
-            raise ValueError(f'"{prptocol_name}" is not a valid name. Valid names are: {list(self._protocols.keys())}')
+            raise ValueError(f'"{protocol_name}" is not a valid name. Valid names are: {list(self._protocols.keys())}')
         return protocol(protocol_name)
 
 

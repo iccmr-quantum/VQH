@@ -587,6 +587,7 @@ class HarpProtocol(VQHProtocol):
         self.name = name
 
     def run(self, sessionname):
+        #config.PLATFORM = hwi
         self.data = run_vqh(sessionname)
         return self.data
 
