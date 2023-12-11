@@ -3,12 +3,8 @@
 *.pyc
 *.swp
 **_Data/
-Data/
 Untitled.ipynb
 vqe_sounds/
-Session*/
-DependentOrigination*/
-Saber*/
 h_setup_*
 h1_*
 h2_*
@@ -16,9 +12,4 @@ Recordings/
 sort_paulis.py
 to_pete_template/*.pem
 to_pete_template/node_modules/
-Chords/
-Coupling/
-Generated/
-Maria/
-Vis/
-Visu/
+test.py

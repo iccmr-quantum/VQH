@@ -268,10 +268,10 @@ def run_sampling_vqe(ansatz, operator, optimizer, initial_point):
 
     print(f'Hardware Interface: {config.PLATFORM}')
     print(f'Platform: {config.PLATFORM.backend}')
-    print(f'Backend Name: {config.PLATFORM.backend.client.get_quantum_architecture().name}')
-    print(f'Operations Available: {config.PLATFORM.backend.client.get_quantum_architecture().operations}')
-    print(f'Qubits: {config.PLATFORM.backend.client.get_quantum_architecture().qubits}')
-    print(f'Architecture: {config.PLATFORM.backend.client.get_quantum_architecture().qubit_connectivity}')
+    #print(f'Backend Name: {config.PLATFORM.backend.client.get_quantum_architecture().name}')
+    #print(f'Operations Available: {config.PLATFORM.backend.client.get_quantum_architecture().operations}')
+    #print(f'Qubits: {config.PLATFORM.backend.client.get_quantum_architecture().qubits}')
+    #print(f'Architecture: {config.PLATFORM.backend.client.get_quantum_architecture().qubit_connectivity}')
     estimator = Estimator(options = {'backend': config.PLATFORM.backend, 'shots': 1024})
 
     sampler = Sampler(options = {'shots': 1024})
@@ -473,7 +473,7 @@ def run_vqh(sessionname): # Function called by the main script for experiments a
     with open("vqe_conf.json") as cfile:
         config = json.load(cfile)
 
-    PATH = f"{sessionname}/Data_{config['nextpathid']}"
+    PATH = f"{sessionname}_Data/Data_{config['nextpathid']}"
     # Read QUBOs from 'h_setup.csv'
     qubos = build_qubos_from_csv(config["sequence_length"], config["size"])
     # Obtain sonification parameters
@@ -498,13 +498,13 @@ def run_vqh(sessionname): # Function called by the main script for experiments a
     corrected_loudnesses = [list(i.values()) for i in loudness_list_of_dicts]
     corrected_states = [[int(j) for j in i] for i in states]
     origination = {"states": corrected_states, "amps": corrected_loudnesses, "values": norm_values.tolist()}
-    with open(f"{sessionname}/to_pete/dependent_origination.json", 'r') as dofile:
+    with open(f"{sessionname}_Data/to_pete/dependent_origination.json", 'r') as dofile:
         old_data = json.load(dofile)
 
     #print(old_data)
     #old_data[f"data_{config['nextpathid']}"] = origination
     old_data=origination
-    with open(f"{sessionname}/to_pete/dependent_origination.json", 'w') as dofile:
+    with open(f"{sessionname}_Data/to_pete/dependent_origination.json", 'w') as dofile:
         json.dump(old_data, dofile, indent=4)
     # -------------------------------------------------------
 
