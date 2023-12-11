@@ -520,58 +520,6 @@ def run_vqh(sessionname): # Function called by the main script for experiments a
 
 
 
-def test_harmonize():
-
-    global PATH
-
-    PATH = "Data/Test"
-    # specify all possible notes. This is one octave. For more octaves, just add more notes.
-    notes = ['c', 'c#', 'd', 'd#', 'e', 'f', 'f#', 'g', 'g#', 'a', 'a#', 'b']
-    config = {
-        'reps': 1,
-        'entanglement': 'linear',
-        'optimizer_name': 'COBYLA',
-        'iterations': [64, 64, 64, 64]
-    }
-    # example simple c major. Different Hamiltonians with superposition of chords as ground state are possible.
-    # beneficial negative weights for desired notes
-    c_major = {
-        ('c', 'c'): -1.,
-        ('e', 'e'): -1.,
-        ('g', 'g'): -1.,
-    }
-    # penalty for other notes
-    # make sure all notes are defined in the qubo
-    notes = ['c', 'c#', 'd', 'd#', 'e', 'f', 'f#', 'g', 'g#', 'a', 'a#', 'b']
-    for note in notes:
-        if (note, note) not in c_major:
-            c_major[(note, note)] = 1.
-
-    f_major = {
-        ('f', 'f'): -1.,
-        ('a', 'a'): -1.,
-        ('c', 'c'): -1.,
-    }
-    for note in notes:
-        if (note, note) not in f_major:
-            f_major[(note, note)] = 1.
-
-    g_major = {
-        ('g', 'g'): -1.,
-        ('b', 'b'): -1.,
-        ('d', 'd'): -1.,
-    }
-    for note in notes:
-        if (note, note) not in g_major:
-            g_major[(note, note)] = 1.
-
-    qubos = [c_major, g_major, f_major, c_major]
-    # logger.debug(qubos)
-    loudnesses, values = harmonize(qubos, **config)
-    loudness_list_of_dicts = loudnesses_to_list_of_dicts(loudnesses)
-
-    return loudness_list_of_dicts
-
 def compute_exact_solution(operator):
     '''Minimum eigenvalue computed using NumPyMinimumEigensolver'''
     eigensolver = NumPyMinimumEigensolver()
