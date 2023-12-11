@@ -17,6 +17,7 @@ import csv
 import json
 import logging
 import os
+import config
 from shutil import copy2
 
 mpl.rcParams['toolbar'] = 'None'
@@ -261,7 +262,13 @@ def run_sampling_vqe(ansatz, operator, optimizer, initial_point):
     #                     'noise_model': None, 'basis_gates': None, 'coupling_map': None},
     #    run_options={'shots': 1024})
 
-    estimator = Estimator(options = {'shots': 1024})
+    print(f'Hardware Interface: {config.PLATFORM}')
+    print(f'Platform: {config.PLATFORM.backend}')
+    print(f'Backend Name: {config.PLATFORM.backend.client.get_quantum_architecture().name}')
+    print(f'Operations Available: {config.PLATFORM.backend.client.get_quantum_architecture().operations}')
+    print(f'Qubits: {config.PLATFORM.backend.client.get_quantum_architecture().qubits}')
+    print(f'Architecture: {config.PLATFORM.backend.client.get_quantum_architecture().qubit_connectivity}')
+    estimator = Estimator(options = {'backend': config.PLATFORM.backend, 'shots': 1024})
     sampler = Sampler(options = {'shots': 1024})
 
     result = optimizer.minimize(lambda x: cost_function(
@@ -342,7 +349,7 @@ def harmonize(qubos, **kwargs):
             #initial_point[12:24] = np.pi/2
             #initial_point[24:36] = np.pi/2
             #initial_point[36:48] = np.pi/2
-            initial_point = (np.pi/4)*np.ones(ansatz.num_parameters)
+            #initial_point = (np.pi/4)*np.ones(ansatz.num_parameters)
             print(initial_point)
         # copy ansatz to avoid VQE changing it
         ansatz_temp = copy.deepcopy(ansatz)
@@ -483,14 +490,17 @@ def run_vqh(sessionname): # Function called by the main script for experiments a
     #print(type(states), type(norm_values.tolist()), loudnesses)
 
     # Dependent Origination related code --------------------
-    # origination = {"states": states, "amps": loudness_list_of_dicts, "values": norm_values.tolist()}
-    # with open(f"{sessionname}/to_pete/dependent_origination.json", 'r') as dofile:
-        # old_data = json.load(dofile)
+    corrected_loudnesses = [list(i.values()) for i in loudness_list_of_dicts]
+    corrected_states = [[int(j) for j in i] for i in states]
+    origination = {"states": corrected_states, "amps": corrected_loudnesses, "values": norm_values.tolist()}
+    with open(f"{sessionname}/to_pete/dependent_origination.json", 'r') as dofile:
+        old_data = json.load(dofile)
 
-    # #print(old_data)
-    # old_data[f"data_{config['nextpathid']}"] = origination
-    # with open(f"{sessionname}/to_pete/dependent_origination.json", 'w') as dofile:
-        # json.dump(old_data, dofile, indent=4)
+    #print(old_data)
+    #old_data[f"data_{config['nextpathid']}"] = origination
+    old_data=origination
+    with open(f"{sessionname}/to_pete/dependent_origination.json", 'w') as dofile:
+        json.dump(old_data, dofile, indent=4)
     # -------------------------------------------------------
 
     # Prepare next run

@@ -12,9 +12,9 @@
 # VQE and Quantum Computing part
 from qiskit import IBMQ
 import vqh_functions as vqh
-
+#import encodings.vqh_functions as vqh
 # SuperCollider, Sonification and Synthesis part
-import sc_functions as sc
+import synth.sc_functions as sc
 
 # Logging and global variables
 import logging
@@ -24,6 +24,10 @@ import time
 # Global variables
 import ibmqglobals
 import globalsvqh
+import config
+
+
+from hardware.hardware_library import HardwareLibrary
 
 # Event Management
 import json
@@ -296,11 +300,21 @@ Internal VQH functions:\n\
     p = argparse.ArgumentParser(description=descr, formatter_class=RawDescriptionHelpFormatter)
 
     p.add_argument('sessionpath', type=str, nargs='?', default='Session_', help="Folder name where VQE data will be stored/read")
+    p.add_argument('platform', type=str, nargs='?', default='local', help="Quantum Platform provider used (Local, IQM, IBMQ). Default is 'local'.")
     args = p.parse_args()
     logger.debug(args)
 
 
     globalsvqh.SESSIONPATH = args.sessionpath
+
+
+    
+    config.HW_INTERFACE = args.platform
+    hwi = HardwareLibrary().get_hardware_interface(config.HW_INTERFACE)
+    hwi.connect()
+    hwi.get_backend()
+    config.PLATFORM = hwi
+    print(hwi, hwi.provider, hwi.backend)
 
 
     print('=====================================================')
