@@ -20,6 +20,8 @@ import os
 import config
 from shutil import copy2
 
+from abstract_classes import VQHProtocol, QuantumHardwareInterface
+
 mpl.rcParams['toolbar'] = 'None'
 mpl.rcParams['lines.linewidth'] = .8
 
@@ -578,4 +580,20 @@ def compute_exact_solution(operator):
     result = eigensolver.compute_minimum_eigenvalue(operator)
     
     return result
+
+class HarpProtocol(VQHProtocol):
+
+    def __init__(self, name):
+        self.name = name
+
+    def run(self, sessionname):
+        self.data = run_vqh(sessionname)
+        return self.data
+
+    def encode(self):
+        pass
+
+    def decode(self):
+        pass
+
 

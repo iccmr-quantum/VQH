@@ -11,7 +11,7 @@
 #===========================================
 # VQE and Quantum Computing part
 from qiskit import IBMQ
-import vqh_functions as vqh
+#import vqh_functions as vqh
 #import encodings.vqh_functions as vqh
 # SuperCollider, Sonification and Synthesis part
 import synth.sc_functions as sc
@@ -28,6 +28,7 @@ import config
 
 
 from hardware.hardware_library import HardwareLibrary
+from protocols.protocol_library import ProtocolLibrary
 
 # Event Management
 import json
@@ -99,6 +100,8 @@ def CLI():
     global progQuit, comp, last, reset, generated_quasi_dist, comp_events
     generated_quasi_dist = []
     
+    vqh = config.PROTOCOL
+
     #print("here")
 # Future work: creating, managing music compositions, rehearsal and performance ----------------------------
     # try:
@@ -217,7 +220,8 @@ def CLI():
         elif x[0] == 'runvqe':
             if len(x) == 1:
                 print("running VQE")
-                generated_quasi_dist, generated_values = vqh.run_vqh(globalsvqh.SESSIONPATH)
+                #generated_quasi_dist, generated_values = vqh.run_vqh(globalsvqh.SESSIONPATH)
+                generated_quasi_dist, generated_values = vqh.run(globalsvqh.SESSIONPATH)
             else:
                 print('Error! Try Again')
         
@@ -301,6 +305,7 @@ Internal VQH functions:\n\
 
     p.add_argument('sessionpath', type=str, nargs='?', default='Session_', help="Folder name where VQE data will be stored/read")
     p.add_argument('platform', type=str, nargs='?', default='local', help="Quantum Platform provider used (Local, IQM, IBMQ). Default is 'local'.")
+    p.add_argument('protocol', type=str, nargs='?', default='harp', help="Encoding strategy for generating sonification data. Default is 'harp'.")
     args = p.parse_args()
     logger.debug(args)
 
@@ -315,6 +320,10 @@ Internal VQH functions:\n\
     hwi.get_backend()
     config.PLATFORM = hwi
     print(hwi, hwi.provider, hwi.backend)
+
+    protocol = ProtocolLibrary().get_protocol(args.protocol)
+    config.PROTOCOL = protocol
+
 
 
     print('=====================================================')

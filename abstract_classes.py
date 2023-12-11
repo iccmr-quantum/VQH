@@ -26,12 +26,16 @@ class VQHProtocol(ABC):
     @abstractmethod
     def __init__(self, n):
         self.name = None
+        self.data = None
 
     @abstractmethod
     def encode(self, n): # midi to code
         pass
     @abstractmethod
     def decode(self, n): # code to midi
+        pass
+    @abstractmethod
+    def run(self):
         pass
 
 class SonificationInterface(ABC):
