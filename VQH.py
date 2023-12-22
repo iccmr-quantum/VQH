@@ -1,11 +1,12 @@
 #===========================================
 # VQH: Variational Quantum Harmonizer
 # Sonification of the VQE Algorithm
-# Authors: Paulo Itaborai and Tim Schwägerl
-#
+# Authors: Paulo Itaborai, Tim Schwägerl,
+# María Aguado Yáñez, Arianna Crippa
 #
 # ICCMR, University of Plymouth, UK
-# CQTA, DESY Institut, Germany
+# CQTA, DESY Zeuthen, Germany
+# Universitat Pompeu Fabra, Spain
 #
 # Jan 2023
 #===========================================
@@ -22,9 +23,9 @@ import sys
 import time
 
 # Global variables
-import ibmqglobals
-import globalsvqh
 import config
+#import ibmqglobals
+#import globalsvqh
 
 
 from hardware.hardware_library import HardwareLibrary
@@ -58,21 +59,8 @@ last = False
 reset = True
 port = ''
 
-VALID_COMMANDS = ['play', 'runvqe', 'q', 'quit', 'stop', 'testvqe', 'playfile']
+VALID_COMMANDS = ['play', 'runvqe', 'q', 'quit', 'stop', 'playfile']
 
-# Future work: creating, managing music compositions, rehearsal and performance ----------------------------
-# def update_compfile():
-
-    # comp_events = DictReader(open("comp_events_template.csv"), skipinitialspace=True)
-    # with open('composition_template.json', 'w') as compfile:
-
-        # comp = {arg.pop('eventid'):{key:float(arg[key]) for key in arg} for arg in comp_events}
-        # #logger.debug(f'COMP EVENTS F/ CSV: {comp}')
-        # lastevent = len(comp)
-        # comp[str(-lastevent)] = comp.pop(str(lastevent))
-        # json.dump(comp, compfile, indent=4)
-
-# ----------------------------------------------------------------------------------------------------------
 
 # Play sonification from a previously generated file
 def playfile(num, folder, son_type=1):
@@ -83,24 +71,16 @@ def playfile(num, folder, son_type=1):
         vals = [float(val.rstrip()) for val in efile]
     sc.sonify(dist, vals, son_type)
 
-# Future work: creating, managing music compositions, rehearsal and performance ----------------------------
-# def run_event(event):
-
-    # global comp_events
-
-    # logger.info(f'RUNNING EVENT {event}')
-    # print(f'RUNNING EVENT {comp_events[0]} {event}')
-    # logger.debug(f'DOING NOTHING FOR NOW')
-# ----------------------------------------------------------------------------------------------------------
 
 class VQH:
 
     def __init__(self, protocol_name, hwi_name, soni_name=None):
         self.hardware_library = HardwareLibrary()
         self.protocol_library = ProtocolLibrary()
-        #self.sonification_library = SonificationLibrary()
+        #self.sonification_library = SonificationLibrary() # There will be a sonification library
         
         self.protocol = self.protocol_library.get_protocol(protocol_name)
+        config.PROTOCOL = self.protocol
         print(f'Encoding protocol: {self.protocol}')
         
         self.hardware_interface = self.hardware_library.get_hardware_interface(hwi_name)
@@ -115,7 +95,7 @@ class VQH:
     def runvqe(self, sessionname = "Default"):
 
         self.session_name = sessionname
-
+        # The function below is the main function inside your protocol class
         self.protocol.run(self.session_name)
     
     # Play sonification from a previously generated file
@@ -142,46 +122,12 @@ def CLI(vqh):
     generated_quasi_dist = []
     
 
-    #print("here")
-# Future work: creating, managing music compositions, rehearsal and performance ----------------------------
-    # try:
-        # ce = DictReader(open("comp_events_template.csv"), skipinitialspace=True)
-        # #print(ce)
-        # open('composition_template.json', 'w')
-    # except:
-        # print("not successfulk")
-    # if os.path.exists('composition_template.json'):
-        # update_compfile()
-        # with open('composition_template.json') as compfile:
-            # composition = json.load(compfile)
-            # comp_events = deque([int(x) for x in composition])
-            # #logger.debug(f'LOADED COMPOSITION: {composition}')
-            # reset = True
-# ----------------------------------------------------------------------------------------------------------
-    #print("here")
     # prompt preparation
     session = PromptSession()
     validator = Validator.from_callable(is_command, error_message='This command does not exist. Check for mispellings.')
 
     while not progQuit:
-
-# Future work: creating, managing music compositions, rehearsal and performance ----------------------------
-        # if comp:
-            # if comp_events[0] > 0:
-                # current_event = int(comp_events[0])
-            # elif comp_events[0] < 0:
-                # current_event = -int(comp_events[0])
-            # if last:
-                # current_event = len(comp_events)+1
-        # else:
-            # current_event = 0
-
-        # current_event -= 1
-        # # --- PROMPT ---
-        # x = session.prompt(f'({current_event}) VQH=> ', validator=validator, validate_while_typing=False)
-# ----------------------------------------------------------------------------------------------------------
-        
-
+      
         #CLI Commands
         x = session.prompt(f' VQH=> ', validator=validator, validate_while_typing=False)
         x = x.split(' ')
@@ -189,79 +135,17 @@ def CLI(vqh):
             print(f'Score Features not implemented yet for the VQH!')
 
 
-# Future work: creating, managing music compositions, rehearsal and performance ----------------------------
-            # if reset:
-                # reset = False
-            # if last:
-                # comp_events.clear()
-                # comp = False
-            # try:
-                # print(comp_events[0])
-                # logger.debug(f'EVENT : {comp_events[0]} {type(comp_events[0])}')
-            # except:
-                # print(f'Score ended! type "reset" to reload')
-                # continue
-            # run_event(composition[str(comp_events[0])])
-
-            # if comp_events[0] < 0:
-                # print('END OF SCORE')
-                # last = True
-            # comp_events.rotate(-1)
-        # elif x[0] == 'previous':
-            # if not comp:
-                # print(f'Score ended! type "reset" to reload')
-                # continue
-            # if not reset:
-                # comp_events.rotate(2)
-                # if comp_events[0] < 0:
-                    # print('You are in the beginning! Cannot go back!')
-                    # continue
-                # logger.debug(f'EVENT : {comp_events[0]} {type(comp_events[0])}')
-                # run_event(composition[str(comp_events[0])])
-                # last = False
-                # comp_events.rotate(-1)
-            # else:
-                # print('The score was reset! type "next" to begin')
-
-        # elif x[0] == 'reset':
-            # print(f'Resetting Score...')
-            # comp_events = deque([int(x) for x in composition])
-            # last = False
-            # comp = True
-        # elif x[0] == 'repeat':
-            # if not comp:
-                # print(f'Score ended! type "reset" to reload')
-                # continue
-            # if not reset:
-                # comp_events.rotate(1)
-                # logger.debug(f'EVENT : {comp_events[0]} {type(comp_events[0])}')
-                # run_event(composition[str(comp_events[0])])
-                # comp_events.rotate(-1)
-            # else:
-                # print('The score was reset! type "next" to begin')
-        # elif x[0] == 'updatecomp':
-            # update_compfile()
-            # with open('composition.json') as compfile:
-                # composition = json.load(compfile)
-                # comp_events = deque([int(x) for x in composition])
-                # logger.debug(f'UPDATED COMPOSITION: {composition}')
-                # reset = True
-# ----------------------------------------------------------------------------------------------------------
-
         elif x[0] == 'quit' or x[0] == 'q':
             progQuit=True
             continue
 
-        # Deprecated
-        # elif x[0] == 'testvqe':
-            # generated_quasi_dist = vqh.test_harmonize()
         
         # Main VQH Command
         elif x[0] == 'runvqe':
             if len(x) == 1:
                 print("running VQE")
                 #generated_quasi_dist, generated_values = vqh.run_vqh(globalsvqh.SESSIONPATH)
-                vqh.runvqe(globalsvqh.SESSIONPATH)
+                vqh.runvqe(config.SESSIONPATH)
             else:
                 print('Error! Try Again')
         
@@ -270,8 +154,8 @@ def CLI(vqh):
             son_type = 1
             if len(x) == 3:
                 son_type = int(x[2])
-            #playfile(x[1], globalsvqh.SESSIONPATH, son_type)
-            vqh.playfile(x[1], globalsvqh.SESSIONPATH, son_type)
+            #playfile(x[1], config.SESSIONPATH, son_type)
+            vqh.playfile(x[1], config.SESSIONPATH, son_type)
         
         # Same as using ctrl+. in SuperCollider
         elif x[0] == 'stop':
@@ -288,29 +172,8 @@ def CLI(vqh):
             else:
                 print("Quasi Dists NOT generated!")
 
-# Future work: creating, managing music compositions, rehearsal and performance ----------------------------
-        # elif x[0] == 'set':
-            # if len(x) != 2:
-                # print('The "set" function expects one argument. ex:"=> set 2" goes to event 2. Type again.')
-                # continue
-            # e_id = int(x[1])
-            # if e_id > len(comp_events):
-                # print(f'Error. There is no event {e_id} in the score. Type again.')
-                # continue
-            # print(f'Setting Score. type "next" to go to event {x[1]}.')
-            # comp_events = deque([int(x) for x in composition])
-            # if e_id < 0:
-                # e_id = -e_id
-                # last=True
-            # if e_id == 1:
-                # reset=True
-            # comp_events.rotate(-e_id+1)
-            # comp = True
-# ----------------------------------------------------------------------------------------------------------
         else:
             print(f'Not a valid input - {x}')
-
-
 
 if __name__ == '__main__':
 
@@ -352,19 +215,11 @@ Internal VQH functions:\n\
     logger.debug(args)
 
 
-    globalsvqh.SESSIONPATH = args.sessionpath
-
-
-    
+    config.SESSIONPATH = args.sessionpath
     config.HW_INTERFACE = args.platform
-    #hwi = HardwareLibrary().get_hardware_interface(config.HW_INTERFACE)
-    #hwi.connect()
-    #hwi.get_backend()
-    #config.PLATFORM = hwi
-    #print(hwi, hwi.provider, hwi.backend)
 
-    #protocol = ProtocolLibrary().get_protocol(args.protocol)
-    #config.PROTOCOL = protocol
+
+
 
     vqh = VQH(args.protocol, args.platform)
 

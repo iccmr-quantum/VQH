@@ -86,30 +86,6 @@ def build_qubos_from_csv(n_of_ham=4, n_of_notes=12):
 
     return qubos
 
-def qubo_to_operator_quadratic_program(qubo): # Deprecated Function. replaced by 'qubo_to_operator()'
-    '''Translate qubo of format {(note_1, note_2): coupling, ...} to operator to be used in VQE this yields diagonal Hamiltonians only'''
-
-    notes = []
-    linear = {}
-    quadratic = {}
-    mod = QuadraticProgram('variational_quantum_harmonizer')
-    for key, value in qubo.items():
-        if key[0] not in notes:
-            notes.append(key[0])
-            mod.binary_var(name=key[0])
-        if key[1] not in notes:
-            notes.append(key[1])
-            mod.binary_var(name=key[1])
-        if key[0] == key[1]:
-            linear.update({key[0]: value})
-        else:
-            quadratic.update({key: value})
-    variables_index = mod.variables_index
-    mod.minimize(linear=linear, quadratic=quadratic)
-    operator, offset = mod.to_ising()
-
-    return operator, variables_index
-
 def H_Ising(N,J,hx):# Arianna Crippa's Ising model implementation for comparison and debugging
     # Ising model H
     H_Ising=0
@@ -528,59 +504,6 @@ def run_vqh(sessionname): # Function called by the main script for experiments a
     plot_values(values)
     return loudness_list_of_dicts, values
 
-
-
-def test_harmonize():
-
-    global PATH
-
-    PATH = "Data/Test"
-    # specify all possible notes. This is one octave. For more octaves, just add more notes.
-    notes = ['c', 'c#', 'd', 'd#', 'e', 'f', 'f#', 'g', 'g#', 'a', 'a#', 'b']
-    config = {
-        'reps': 1,
-        'entanglement': 'linear',
-        'optimizer_name': 'COBYLA',
-        'iterations': [64, 64, 64, 64]
-    }
-    # example simple c major. Different Hamiltonians with superposition of chords as ground state are possible.
-    # beneficial negative weights for desired notes
-    c_major = {
-        ('c', 'c'): -1.,
-        ('e', 'e'): -1.,
-        ('g', 'g'): -1.,
-    }
-    # penalty for other notes
-    # make sure all notes are defined in the qubo
-    notes = ['c', 'c#', 'd', 'd#', 'e', 'f', 'f#', 'g', 'g#', 'a', 'a#', 'b']
-    for note in notes:
-        if (note, note) not in c_major:
-            c_major[(note, note)] = 1.
-
-    f_major = {
-        ('f', 'f'): -1.,
-        ('a', 'a'): -1.,
-        ('c', 'c'): -1.,
-    }
-    for note in notes:
-        if (note, note) not in f_major:
-            f_major[(note, note)] = 1.
-
-    g_major = {
-        ('g', 'g'): -1.,
-        ('b', 'b'): -1.,
-        ('d', 'd'): -1.,
-    }
-    for note in notes:
-        if (note, note) not in g_major:
-            g_major[(note, note)] = 1.
-
-    qubos = [c_major, g_major, f_major, c_major]
-    # logger.debug(qubos)
-    loudnesses, values = harmonize(qubos, **config)
-    loudness_list_of_dicts = loudnesses_to_list_of_dicts(loudnesses)
-
-    return loudness_list_of_dicts
 
 def compute_exact_solution(operator):
     '''Minimum eigenvalue computed using NumPyMinimumEigensolver'''
