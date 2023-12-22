@@ -12,8 +12,7 @@
 #===========================================
 # VQE and Quantum Computing part
 from qiskit import IBMQ
-#import vqh_functions as vqh
-#import encodings.vqh_functions as vqh
+
 # SuperCollider, Sonification and Synthesis part
 import synth.sc_functions as sc
 
@@ -24,8 +23,6 @@ import time
 
 # Global variables
 import config
-#import ibmqglobals
-#import globalsvqh
 
 
 from hardware.hardware_library import HardwareLibrary
@@ -217,9 +214,6 @@ Internal VQH functions:\n\
 
     config.SESSIONPATH = args.sessionpath
     config.HW_INTERFACE = args.platform
-
-
-
 
     vqh = VQH(args.protocol, args.platform)
 
