@@ -345,7 +345,7 @@ Internal VQH functions:\n\
 
     p = argparse.ArgumentParser(description=descr, formatter_class=RawDescriptionHelpFormatter)
 
-    p.add_argument('sessionpath', type=str, nargs='?', default='Session_', help="Folder name where VQE data will be stored/read")
+    p.add_argument('sessionpath', type=str, nargs='?', default='Session', help="Folder name where VQE data will be stored/read")
     p.add_argument('platform', type=str, nargs='?', default='local', help="Quantum Platform provider used (Local, IQM, IBMQ). Default is 'local'.")
     p.add_argument('protocol', type=str, nargs='?', default='harp', help="Encoding strategy for generating sonification data. Default is 'harp'.")
     args = p.parse_args()
