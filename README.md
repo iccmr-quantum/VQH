@@ -20,29 +20,14 @@ You can listen to music that has used the VQH in its artistic process:
 - Create a python environment (>3.10 recommended)
 
 Python dependencies:
-`qiskit`
+`qiskit`, `qiskit-optimization`, `qiskit-aer`, `qiskit-iqm`, `iqm-cortex-cli`, `numpy`, `matplotlib`, `prompt_toolkit`, `python-osc`, [`python-supercollider`](https://pypi.org/project/supercollider/)
 
-`qiskit-optimization`
+Installing dependencies with pip:
 
-`qiskit-aer`
+```bash
+pip install qiskit qiksit-optimization qiskit-aer qiskit-iqm iqm-cortex-cli numpy matplotlib prompt_toolkit python-osc supercollider
+```
 
-`qiskit-iqm`
-
-`iqm-cortex-cli`
-
-`numpy`
-
-`matplotlib`
-
-`prompt_toolkit`
-
-`pyhon-osc`
-
-`python-supercollider` [https://pypi.org/project/supercollider/](https://pypi.org/project/supercollider/)
-  - Current `python-supercollider` version 0.0.5 doesn't work on Mac (windows untested) due to a deprecated dependency `pyliblo` and Liblo for OSC. It is also hard to install it on Linux, but it works.
-		I'm working on a solution, migrating the OSC commmutication to `python-osc`, which will be featured in v0.0.6. See this [Pull Request](https://github.com/ideoforms/python-supercollider/pull/12])
-		
-	As a result, for the time being, *you should clone/download* [*Itaborala's fork of python-supercollider*](https://github.com/Itaborala/python-osc-supercollider), `cd` (or `dir`) into that folder, and install the package using `pip install -e .` 
 
 If you are sonifying your data with SuperCollider, you should also [download and install it](https://supercollider.github.io/downloads.html)
 
