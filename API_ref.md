@@ -3,12 +3,19 @@
 ## Workflow for Harp (QUBO + Marginal) model
 
 1- CSV File -> QUBO -> Ising Hamiltonian -> PauliSum Operators
+
 2- Operators + Anzats + Optimizer -> Sampling VQE
+
 3- VQE Sample/Iteration -> Statevector Binary Probabilities (SBP) + Expectation Value (EV) 
+
 4- SBP -> Marginal Distribution (MD) -> Loudness
+
 5- After all iterations: Loudnesses with Print Format (Dict of Lists) -> Loudnesses with Sonification Format (List of Dicts) 
+
 6- Data in Print Format -> Plot
+
 7- Save all Data and Metadata to Experiment subfolder
+
 8- Data in Sonification Format -> Sonification Mapping -> Synth -> :)
 
 
