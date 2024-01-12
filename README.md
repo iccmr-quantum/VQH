@@ -50,9 +50,10 @@ The flags in square brackets [] are optional, but it is recommended that you set
 	`protocol` - Note encoding schemes/protocols for interpreting quantum states as notes, determining how VQE will be sonified. Available protocols are `harp` (default). New protocols are being introduced.
 	
 #### Example
-The following command will start VQH, all generated data will be stored inside a folder named `Example_Data/`, will use the local simulator, and the `harp` protocol as default:
 
 `python VQH.py Example local`
+
+The following command will start VQH, all generated data will be stored inside a folder named `Example_Data/`, will use the local simulator, and the `harp` protocol as default:
 
 
 ### VQH internal functions
