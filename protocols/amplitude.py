@@ -9,7 +9,7 @@ from qiskit.circuit.library import EfficientSU2
 from qiskit_optimization import QuadraticProgram
 from qiskit.algorithms.optimizers import COBYLA, NFT, SPSA, TNC, SLSQP
 from qiskit.algorithms.minimum_eigensolvers import NumPyMinimumEigensolver
-from qiskit.quantum_info import SparsePauliOp
+from qiskit.quantum_info import SparsePauliOp, Operator
 from qiskit.opflow.primitive_ops import PauliSumOp
 from qiskit.opflow import X, Z, I, Y
 import matplotlib.pyplot as plt
@@ -51,7 +51,7 @@ from abstract_classes import VQHProtocol, QuantumHardwareInterface
 # STEP 1: BUILD THE HAMILTONIAN OPERATOR FROM THE CSV FILE
 # TODO: The function below was copied from the 'new_encodings' branch. It may contain bugs. Needs to be tested.
 
-def build_operators_from_csv(n_of_ham=2, n_of_notes=8):
+def build_operators_from_csv(n_of_ham=2, n_of_notes=7):
     # Function that builds the Hamiltonian operator from the CSV file
     
     with open("operator_setup.csv", 'r') as hcsv:
@@ -85,6 +85,76 @@ def build_operators_from_csv(n_of_ham=2, n_of_notes=8):
 
 
 # STEP 2: CONVERT THE BINARY PROBABILITIES TO LOUDNESSES IN THE PRINT FORMAT
+
+def return_optimizer(optimizer_name, maxiter):
+    '''Convenience function to return optimizer object'''
+
+    if optimizer_name == 'SPSA':
+        optimizer = SPSA(maxiter=maxiter)
+    elif optimizer_name == 'COBYLA':
+        optimizer = COBYLA(maxiter=maxiter)
+    elif optimizer_name == 'NFT':
+        optimizer = NFT(maxiter=maxiter)
+    elif optimizer_name == 'TNC':
+        optimizer = NFT(maxiter=maxiter)
+    elif optimizer_name == 'SLSQP':
+        optimizer = SLSQP(maxiter=maxiter)
+
+    return optimizer
+
+
+def run_sampling_vqe(ansatz, operator, optimizer, initial_point):
+    '''Runs VQE and samples the wavefunction at each iteration'''
+
+
+    binary_probabilities = []
+    expectation_values = []
+
+
+    #VQE Iteration.
+
+    def cost_function(ansatz, params, operator):
+        ansatz_temp = copy.deepcopy(ansatz)
+        result_estimator = estimator.run(ansatz_temp, operator, parameter_values=params).result()
+        expectation_value = np.real(result_estimator.values[0])
+        ansatz_temp = copy.deepcopy(ansatz)
+        #print(f'Parameters: {params}')
+        ansatz_temp.measure_all()
+        sample = sampler.run(circuits=ansatz_temp,
+                             parameter_values=params).result()
+        sample_binary_probabilities = sample.quasi_dists[0].binary_probabilities(
+        )
+
+        #print(f'Sample: {sample_binary_probabilities}')
+        #for key in sample_binary_probabilities:
+            #print(operator.eval(key))
+        # The statevector and expectation values are collected at each iteration
+        # for sonification
+
+        binary_probabilities.append(sample_binary_probabilities)
+        expectation_values.append(expectation_value)
+        return expectation_value
+
+    #sampler = Sampler(
+    #    backend_options={'method': 'automatic',
+    #                     'noise_model': None, 'basis_gates': None, 'coupling_map': None},
+    #    run_options={'shots': 1024})
+
+    print(f'Hardware Interface: {config.PLATFORM}')
+    print(f'Platform: {config.PLATFORM.backend}')
+    #print(f'Backend Name: {config.PLATFORM.backend.client.get_quantum_architecture().name}')
+    #print(f'Operations Available: {config.PLATFORM.backend.client.get_quantum_architecture().operations}')
+    #print(f'Qubits: {config.PLATFORM.backend.client.get_quantum_architecture().qubits}')
+    #print(f'Architecture: {config.PLATFORM.backend.client.get_quantum_architecture().qubit_connectivity}')
+    estimator = Estimator(options = {'backend': config.PLATFORM.backend, 'shots': 1024})
+
+    sampler = Sampler(options = {'shots': 1024})
+
+    result = optimizer.minimize(lambda x: cost_function(
+        ansatz=ansatz, params=x, operator=operator), x0=initial_point)
+
+    return result, binary_probabilities, expectation_values
+
 
 def binary_probabilities_to_loudness(binary_probabilities, variables_index):
     # Function that converts the binary probabilities to loudnesses without using marginal probabilities. It returns the loudnesses in what we call the "Print Format", which is a dictionary of lists
@@ -177,7 +247,7 @@ def plot_loudness(loudnesses):
 
 # STEP 5: HARMONIZE (TODO:NEEDS CLEANING)
 
-def harmonize(qubos, **kwargs):
+def harmonize(operators_variables_index, **kwargs):
     '''Run harmonizer algorithm for list of qubos and list of iterations. VQE is performed for the i-th qubo for i-th number of iterations.'''
     global PATH
     QD = []
@@ -187,11 +257,10 @@ def harmonize(qubos, **kwargs):
     operatorss = []
     # loop over qubos
     os.makedirs(PATH, exist_ok=True)
-    for count, qubo in enumerate(qubos):
+    for count, operator_var_idx in enumerate(operators_variables_index):
         print(f'Working on hamiltonian #{count}')
         
-        # Qubo to Hamiltonian
-        operator, variables_index = qubo_to_operator(qubo, count)
+        operator, variables_index = operators_variables_index[count]
         #logger.debug(f'operator: {operator}')
         
         #Optimizer
@@ -282,10 +351,10 @@ def run_vqh_amplitude(sessionname): # Function called by the main script for exp
         config = json.load(cfile)
 
     PATH = f"{sessionname}_Data/Data_{config['nextpathid']}"
-    # Read QUBOs from 'h_setup.csv'
-    qubos = build_qubos_from_csv(config["sequence_length"], config["size"])
+    # Read HAMILTONIANS from 'h_setup.csv'
+    operators_variables_index = build_operators_from_csv(config["sequence_length"], config["size"])
     # Obtain sonification parameters
-    loudnesses, values, states = harmonize(qubos, **config)
+    loudnesses, values, states = harmonize(operators_variables_index , **config)
     loudness_list_of_dicts = loudnesses_to_list_of_dicts(loudnesses)
     # logger.debug(loudness_list_of_dicts)
 
