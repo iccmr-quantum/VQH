@@ -21,6 +21,7 @@ import config
 from shutil import copy2
 
 from abstract_classes import VQHProtocol, QuantumHardwareInterface
+from vqe.vqe_experiments import SamplingVQE
 
 mpl.rcParams['toolbar'] = 'None'
 mpl.rcParams['lines.linewidth'] = .8
@@ -207,59 +208,6 @@ def return_optimizer(optimizer_name, maxiter):
     return optimizer
 
 
-def run_sampling_vqe(ansatz, operator, optimizer, initial_point):
-    '''Runs VQE and samples the wavefunction at each iteration'''
-
-
-    binary_probabilities = []
-    expectation_values = []
-
-
-    #VQE Iteration.
-
-    def cost_function(ansatz, params, operator):
-        ansatz_temp = copy.deepcopy(ansatz)
-        result_estimator = estimator.run(ansatz_temp, operator, parameter_values=params).result()
-        expectation_value = np.real(result_estimator.values[0])
-        ansatz_temp = copy.deepcopy(ansatz)
-        #print(f'Parameters: {params}')
-        ansatz_temp.measure_all()
-        sample = sampler.run(circuits=ansatz_temp,
-                             parameter_values=params).result()
-        sample_binary_probabilities = sample.quasi_dists[0].binary_probabilities(
-        )
-
-        #print(f'Sample: {sample_binary_probabilities}')
-        #for key in sample_binary_probabilities:
-            #print(operator.eval(key))
-        # The statevector and expectation values are collected at each iteration
-        # for sonification
-
-        binary_probabilities.append(sample_binary_probabilities)
-        expectation_values.append(expectation_value)
-        return expectation_value
-
-    #sampler = Sampler(
-    #    backend_options={'method': 'automatic',
-    #                     'noise_model': None, 'basis_gates': None, 'coupling_map': None},
-    #    run_options={'shots': 1024})
-
-    print(f'Hardware Interface: {config.PLATFORM}')
-    print(f'Platform: {config.PLATFORM.backend}')
-    #print(f'Backend Name: {config.PLATFORM.backend.client.get_quantum_architecture().name}')
-    #print(f'Operations Available: {config.PLATFORM.backend.client.get_quantum_architecture().operations}')
-    #print(f'Qubits: {config.PLATFORM.backend.client.get_quantum_architecture().qubits}')
-    #print(f'Architecture: {config.PLATFORM.backend.client.get_quantum_architecture().qubit_connectivity}')
-    estimator = Estimator(options = {'backend': config.PLATFORM.backend, 'shots': 1024})
-
-    sampler = Sampler(options = {'shots': 1024})
-
-    result = optimizer.minimize(lambda x: cost_function(
-        ansatz=ansatz, params=x, operator=operator), x0=initial_point)
-
-    return result, binary_probabilities, expectation_values
-
-
 def binary_probabilities_to_loudness(binary_probabilities, variables_index):
     ''' Obtain marginal probabilities for each note, interpreted as loudnesses'''
 
@@ -286,13 +234,13 @@ def loudnesses_to_list_of_dicts(loudnesses):
             loudness_list_of_dicts[i][note] = loudness
     return loudness_list_of_dicts
 
-def compute_exact_solution(operator):
-    '''Minimum eigenvalue computed using NumPyMinimumEigensolver
-    for comparison with VQE'''
-    eigensolver = NumPyMinimumEigensolver()
-    result = eigensolver.compute_minimum_eigenvalue(operator)
-
-    return result
+#def compute_exact_solution(operator):
+#    '''Minimum eigenvalue computed using NumPyMinimumEigensolver
+#    for comparison with VQE'''
+#    eigensolver = NumPyMinimumEigensolver()
+#    result = eigensolver.compute_minimum_eigenvalue(operator)
+#
+#    return result
 
 # Main function
 def harmonize(qubos, **kwargs):
@@ -337,11 +285,13 @@ def harmonize(qubos, **kwargs):
         # copy ansatz to avoid VQE changing it
         ansatz_temp = copy.deepcopy(ansatz)
         #print(f'inital point: {initial_point}')
-        result, binary_probabilities, expectation_values = run_sampling_vqe(
+        vqe_experiment = SamplingVQE()
+        vqe_experiment.update_config()
+        result, binary_probabilities, expectation_values = vqe_experiment.run_vqe(
                 ansatz_temp, operator, optimizer, initial_point)
         valuess.extend(expectation_values)
         # Classical expectation value solution
-        numpy_result = compute_exact_solution(operator)
+        numpy_result = vqe_experiment.compute_exact_solution(operator)
         print("VQE RESULT", result.fun)
         #print("VQE BIN PROB", binary_probabilities)
         #print("VQE EXPECTATION VALUES", expectation_values)
@@ -505,12 +455,6 @@ def run_vqh(sessionname): # Function called by the main script for experiments a
     return loudness_list_of_dicts, values
 
 
-def compute_exact_solution(operator):
-    '''Minimum eigenvalue computed using NumPyMinimumEigensolver'''
-    eigensolver = NumPyMinimumEigensolver()
-    result = eigensolver.compute_minimum_eigenvalue(operator)
-    
-    return result
 
 class HarpProtocol(VQHProtocol):
 

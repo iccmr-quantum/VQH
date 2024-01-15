@@ -6,7 +6,7 @@ class ProtocolLibrary():
     def __init__(self):
         self._protocols = {
             "harp": HarpProtocol, 
-            "amplitude": AmplkitudeProtocol,
+            "amplitude": AmplitudeProtocol,
         }
     def get_protocol(self, protocol_name: str='harp') -> VQHProtocol:
         """Returns:protocol class associated with name.
