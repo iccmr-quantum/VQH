@@ -20,12 +20,12 @@ You can listen to music that has used the VQH in its artistic process:
 - Create a python environment (>3.10 recommended)
 
 Python dependencies:
-`qiskit`, `qiskit-optimization`, `qiskit-aer`, `qiskit-iqm`, `iqm-cortex-cli`, `numpy`, `matplotlib`, `prompt_toolkit`, `python-osc`, [`python-supercollider`](https://pypi.org/project/supercollider/)
+`qiskit`, `qiskit-optimization`, `qiskit-aer`, `qiskit-iqm`, `iqm-cortex-cli`, `numpy`, `matplotlib`, `PyQt5`, `prompt_toolkit`, `python-osc`, [`python-supercollider`](https://pypi.org/project/supercollider/)
 
 Installing dependencies with pip:
 
 ```bash
-pip install qiskit qiskit-optimization qiskit-aer qiskit-iqm iqm-cortex-cli numpy matplotlib prompt_toolkit python-osc supercollider
+pip install qiskit qiskit-optimization qiskit-aer qiskit-iqm iqm-cortex-cli numpy matplotlib pyqt5 prompt_toolkit python-osc supercollider
 ```
 
 
