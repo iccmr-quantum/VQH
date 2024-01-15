@@ -110,10 +110,6 @@ def qubo_to_operator(qubo, count, linear_pauli='Z', external_field=0):
     Q = H/4 - const/4 = operator + offset
     
     '''
-    # ---- Tests with varying external transverse field
-    #external_field = [0.01, 0.0464, 0.215, 0.8, 1.0, 2.6, 35.0, 100.0] 
-    #external_field = [0.01, 350.0] 
-    #external_field = [0.01, 0.2, 0.4, 0.6, 0.8, 1.0, 1.2, -14000] 
    # First, we need to create a dictionary that maps the variables to their index in the operator
    # We make sure that the qubo is symmetric and that we only have one term for each pair of variables
     qubo_index = {}
@@ -178,7 +174,6 @@ def qubo_to_operator(qubo, count, linear_pauli='Z', external_field=0):
     for i in range(num_qubits):
         paulix = 'I'*i + 'X' + 'I'*(num_qubits-i-1)
         pauli_list.append((paulix, external_field))
-        #pauli_list.append((paulix, -external_field[count]))
         #pauli_list.append((paulix, external_field-0.2*count))
     operator = PauliSumOp(SparsePauliOp.from_list(pauli_list))
     offset = -const/4 # for future reference
@@ -186,7 +181,6 @@ def qubo_to_operator(qubo, count, linear_pauli='Z', external_field=0):
      
     # Compare H with Arianna's Ising operator
     operator2 = H_Ising(12, 1, external_field)
-    #print(f'Ising: \n{operator2}')
     
     return operator, variables_index
 
@@ -370,10 +364,7 @@ def plot_loudness(loudnesses):
     ax.patch.set_alpha(COLORSCHEME['alpha'])
 
     # Different color styles for Debugging, Dependent Origination and ISQCMC Paper
-    #ax.set_prop_cycle(cycler('color', ['#a0dece', '#f7f7c1', '#f7f797', '#f5f56c', '#26c2d4', '#f883fc', '#baba2f', '#b4d4dc', '#96961b', '#bf1fc4', '#6b6b05', '#595900']))
     ax.set_prop_cycle(cycler('color', COLORSCHEME['chordcolors']))
-    #ax.set_prop_cycle(cycler('color', ['#a0dece', '#f7f7c1', '#f7f797', '#f5f56c', '#26c2d4', '#d6d649', '#baba2f', '#b4d4dc', '#96961b', '#80800d', '#6b6b05', '#595900']))
-    #ax.set_prop_cycle(cycler('color', ['#93abbe', '#202a23', '#c4c9d5', '#425547', '#336068', '#577b7d', '#4e656f', '#b4d4dc']))
     
     # Save plot
     for k in loudnesses:
@@ -399,13 +390,13 @@ def run_vqh(sessionname): # Function called by the main script for experiments a
 
     # Load latest config file
     with open("vqe_conf.json") as cfile:
-        config = json.load(cfile)
+        vqe_config = json.load(cfile)
 
-    PATH = f"{sessionname}_Data/Data_{config['nextpathid']}"
+    PATH = f"{sessionname}_Data/Data_{vqe_config['nextpathid']}"
     # Read QUBOs from 'h_setup.csv'
-    qubos = build_qubos_from_csv(config["sequence_length"], config["size"])
+    qubos = build_qubos_from_csv(vqe_config["sequence_length"], vqe_config["size"])
     # Obtain sonification parameters
-    loudnesses, values, states = harmonize(qubos, **config)
+    loudnesses, values, states = harmonize(qubos, **vqe_config)
     loudness_list_of_dicts = loudnesses_to_list_of_dicts(loudnesses)
     # logger.debug(loudness_list_of_dicts)
 
@@ -415,7 +406,7 @@ def run_vqh(sessionname): # Function called by the main script for experiments a
         json.dump(loudness_list_of_dicts, aggfile, indent=4)
 
     with open(f"{PATH}/vqe_conf.json", 'w') as cfile:
-        json.dump(config, cfile, indent=4)
+        json.dump(vqe_config, cfile, indent=4)
 
     copy2("h_setup.csv", f"{PATH}")
 
@@ -438,16 +429,16 @@ def run_vqh(sessionname): # Function called by the main script for experiments a
 #        old_data = json.load(dofile)
 #
 #    #print(old_data)
-#    #old_data[f"data_{config['nextpathid']}"] = origination
+#    #old_data[f"data_{vqe_config['nextpathid']}"] = origination
 #    old_data=origination
 #    with open(f"{sessionname}_Data/to_pete/dependent_origination.json", 'w') as dofile:
 #        json.dump(old_data, dofile, indent=4)
     # -------------------------------------------------------
 
     # Prepare next run
-    config['nextpathid'] += 1
+    vqe_config['nextpathid'] += 1
     with open("vqe_conf.json", 'w') as cfile:
-        json.dump(config, cfile, indent=4)
+        json.dump(vqe_config, cfile, indent=4)
 
     # Plot loudnesses (Dependent Origination)
     plot_loudness(loudnesses)
