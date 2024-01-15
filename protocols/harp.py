@@ -482,7 +482,7 @@ def run_vqh(sessionname): # Function called by the main script for experiments a
     
     if not os.path.exists(f"{sessionname}_Data/to_pete/dependent_origination.json"):
         with open(f"{sessionname}_Data/to_pete/dependent_origination.json", 'w') as dofile:
-        json.dump({}, dofile, indent=4)
+            json.dump({}, dofile, indent=4)
     
     with open(f"{sessionname}_Data/to_pete/dependent_origination.json", 'r') as dofile:
         old_data = json.load(dofile)
