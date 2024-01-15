@@ -25,7 +25,7 @@ Python dependencies:
 Installing dependencies with pip:
 
 ```bash
-pip install qiskit qiksit-optimization qiskit-aer qiskit-iqm iqm-cortex-cli numpy matplotlib prompt_toolkit python-osc supercollider
+pip install qiskit qiskit-optimization qiskit-aer qiskit-iqm iqm-cortex-cli numpy matplotlib prompt_toolkit python-osc supercollider
 ```
 
 
