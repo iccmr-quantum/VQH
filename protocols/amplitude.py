@@ -51,7 +51,7 @@ from abstract_classes import VQHProtocol, QuantumHardwareInterface
 # STEP 1: BUILD THE HAMILTONIAN OPERATOR FROM THE CSV FILE
 # TODO: The function below was copied from the 'new_encodings' branch. It may contain bugs. Needs to be tested.
 
-def build_operators_from_csv(n_of_ham=2, n_of_notes=7):
+def build_operators_from_csv(n_of_ham=2, n_of_notes=8):
     # Function that builds the Hamiltonian operator from the CSV file
     
     with open("operator_setup.csv", 'r') as hcsv:
