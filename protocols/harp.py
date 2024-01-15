@@ -472,26 +472,26 @@ def run_vqh(sessionname): # Function called by the main script for experiments a
     norm_values = (values - min(values))/(abs(max(values)-min(values)))
     #print(type(states), type(norm_values.tolist()), loudnesses)
 
-    # Dependent Origination related code --------------------
-    corrected_loudnesses = [list(i.values()) for i in loudness_list_of_dicts]
-    corrected_states = [[int(j) for j in i] for i in states]
-    origination = {"states": corrected_states, "amps": corrected_loudnesses, "values": norm_values.tolist()}
-    
-    if not os.path.exists(f"{sessionname}_Data/to_pete"):
-        os.mkdir(f"{sessionname}_Data/to_pete")
-    
-    if not os.path.exists(f"{sessionname}_Data/to_pete/dependent_origination.json"):
-        with open(f"{sessionname}_Data/to_pete/dependent_origination.json", 'w') as dofile:
-        json.dump({}, dofile, indent=4)
-    
-    with open(f"{sessionname}_Data/to_pete/dependent_origination.json", 'r') as dofile:
-        old_data = json.load(dofile)
-
-    #print(old_data)
-    #old_data[f"data_{config['nextpathid']}"] = origination
-    old_data=origination
-    with open(f"{sessionname}_Data/to_pete/dependent_origination.json", 'w') as dofile:
-        json.dump(old_data, dofile, indent=4)
+#    # Dependent Origination related code --------------------
+#    corrected_loudnesses = [list(i.values()) for i in loudness_list_of_dicts]
+#    corrected_states = [[int(j) for j in i] for i in states]
+#    origination = {"states": corrected_states, "amps": corrected_loudnesses, "values": norm_values.tolist()}
+#    
+#    if not os.path.exists(f"{sessionname}_Data/to_pete"):
+#        os.mkdir(f"{sessionname}_Data/to_pete")
+#    
+#    if not os.path.exists(f"{sessionname}_Data/to_pete/dependent_origination.json"):
+#        with open(f"{sessionname}_Data/to_pete/dependent_origination.json", 'w') as dofile:
+#        json.dump({}, dofile, indent=4)
+#    
+#    with open(f"{sessionname}_Data/to_pete/dependent_origination.json", 'r') as dofile:
+#        old_data = json.load(dofile)
+#
+#    #print(old_data)
+#    #old_data[f"data_{config['nextpathid']}"] = origination
+#    old_data=origination
+#    with open(f"{sessionname}_Data/to_pete/dependent_origination.json", 'w') as dofile:
+#        json.dump(old_data, dofile, indent=4)
     # -------------------------------------------------------
 
     # Prepare next run
