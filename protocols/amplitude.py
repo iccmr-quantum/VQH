@@ -84,7 +84,7 @@ def build_operators_from_csv(n_of_ham=2, n_of_notes=8):
     return operators_variables_index
 
 
-# STEP 2: CONVERT THE BINARY PROBABILITIES TO LOUDNESSES IN THE PRINT FORMAT
+# STEP 2: SELECT THE OPTIMIZER AND RUN VQE
 
 def return_optimizer(optimizer_name, maxiter):
     '''Convenience function to return optimizer object'''
@@ -155,6 +155,7 @@ def run_sampling_vqe(ansatz, operator, optimizer, initial_point):
 
     return result, binary_probabilities, expectation_values
 
+# STEP 3: CONVERT THE BINARY PROBABILITIES TO LOUDNESSES IN THE PRINT FORMAT
 
 def binary_probabilities_to_loudness(binary_probabilities, variables_index):
     # Function that converts the binary probabilities to loudnesses without using marginal probabilities. It returns the loudnesses in what we call the "Print Format", which is a dictionary of lists
@@ -166,10 +167,15 @@ def binary_probabilities_to_loudness(binary_probabilities, variables_index):
     for iteration, binary_probability in enumerate(binary_probabilities):
         for key, value in binary_probability.items():
             note = key
-            loudnesses[note][iteration] += value
+            if note in loudnesses:
+                loudnesses[note][iteration] += value
+            else:
+                # Handle the case where the note is not in loudnesses initializing it with zeros and then adding the value
+                loudnesses[note] = np.zeros(len(binary_probabilities))
+                loudnesses[note][iteration] = value
     return loudnesses
 
-# STEP 3: CONVERT THE LOUDNESSES TO A LIST OF DICTS IN THE SONIFICATION FORMAT
+# STEP 4: CONVERT THE LOUDNESSES TO A LIST OF DICTS IN THE SONIFICATION FORMAT
 
 def loudnesses_to_list_of_dicts(loudnesses):
     # Function that coverts loudnesses (a dict of lists) to list of dicts ("Sonification format") where each dict contains the loudness of each note/label for a given iteration
@@ -182,7 +188,7 @@ def loudnesses_to_list_of_dicts(loudnesses):
             loudness_list_of_dicts[i][note] = loudness
     return loudness_list_of_dicts
 
-# STEP 4: PLOTS (TODO: NEEDS CLEANING)
+# STEP 5: PLOTS (TODO: NEEDS CLEANING)
 
 # Plotting colorschemes
 #color_mode = 'quadratic_debug'
@@ -245,7 +251,7 @@ def plot_loudness(loudnesses):
     plt.show()
     fig.clear()
 
-# STEP 5: HARMONIZE (TODO:NEEDS CLEANING)
+# STEP 6: HARMONIZE (TODO:NEEDS CLEANING)
 
 def harmonize(operators_variables_index, **kwargs):
     '''Run harmonizer algorithm for list of qubos and list of iterations. VQE is performed for the i-th qubo for i-th number of iterations.'''
@@ -266,8 +272,7 @@ def harmonize(operators_variables_index, **kwargs):
         #Optimizer
         optimizer = return_optimizer(
             kwargs['optimizer_name'], kwargs['iterations'][count])
-        ansatz = EfficientSU2(num_qubits=len(
-            variables_index), reps=kwargs['reps'], entanglement=kwargs['entanglement'])
+        ansatz = EfficientSU2(num_qubits=operator.num_qubits, reps=kwargs['reps'], entanglement=kwargs['entanglement'])
         #print(f'ansatz: {ansatz.decompose().draw()}')
         #ansatz.draw()
         #ansatz.draw(output='mpl', filename=f'{PATH}/ansatz_{count}.png')
@@ -292,11 +297,11 @@ def harmonize(operators_variables_index, **kwargs):
                 ansatz_temp, operator, optimizer, initial_point)
         valuess.extend(expectation_values)
         # Classical expectation value solution
-        numpy_result = compute_exact_solution(operator)
+        #numpy_result = compute_exact_solution(operator)
         print("VQE RESULT", result.fun)
         #print("VQE BIN PROB", binary_probabilities)
         #print("VQE EXPECTATION VALUES", expectation_values)
-        print("CLASSICAL SOLUTION",numpy_result.eigenvalue)
+        #print("CLASSICAL SOLUTION",numpy_result.eigenvalue)
 
         # For each itetation, the most probable state is collected.
         # Also used for sonification mapping
@@ -341,7 +346,7 @@ def harmonize(operators_variables_index, **kwargs):
     return loudnesses, valuess, max_state
 
 
-# STEP 6: RUN VQH. MAIN LOOP. (TODO:NEEDS CLEANING)
+# STEP 7: RUN VQH. MAIN LOOP. (TODO:NEEDS CLEANING)
     
 def run_vqh_amplitude(sessionname): # Function called by the main script for experiments and performance sessions
     global PATH
