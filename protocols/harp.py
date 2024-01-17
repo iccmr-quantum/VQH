@@ -21,6 +21,7 @@ import config
 from shutil import copy2
 
 from abstract_classes import VQHProtocol, QuantumHardwareInterface
+from vqe.vqe_experiments import SamplingVQE
 
 mpl.rcParams['toolbar'] = 'None'
 mpl.rcParams['lines.linewidth'] = .8
@@ -109,10 +110,6 @@ def qubo_to_operator(qubo, count, linear_pauli='Z', external_field=0):
     Q = H/4 - const/4 = operator + offset
     
     '''
-    # ---- Tests with varying external transverse field
-    #external_field = [0.01, 0.0464, 0.215, 0.8, 1.0, 2.6, 35.0, 100.0] 
-    #external_field = [0.01, 350.0] 
-    #external_field = [0.01, 0.2, 0.4, 0.6, 0.8, 1.0, 1.2, -14000] 
    # First, we need to create a dictionary that maps the variables to their index in the operator
    # We make sure that the qubo is symmetric and that we only have one term for each pair of variables
     qubo_index = {}
@@ -177,7 +174,6 @@ def qubo_to_operator(qubo, count, linear_pauli='Z', external_field=0):
     for i in range(num_qubits):
         paulix = 'I'*i + 'X' + 'I'*(num_qubits-i-1)
         pauli_list.append((paulix, external_field))
-        #pauli_list.append((paulix, -external_field[count]))
         #pauli_list.append((paulix, external_field-0.2*count))
     operator = PauliSumOp(SparsePauliOp.from_list(pauli_list))
     offset = -const/4 # for future reference
@@ -185,7 +181,6 @@ def qubo_to_operator(qubo, count, linear_pauli='Z', external_field=0):
      
     # Compare H with Arianna's Ising operator
     operator2 = H_Ising(12, 1, external_field)
-    #print(f'Ising: \n{operator2}')
     
     return operator, variables_index
 
@@ -205,59 +200,6 @@ def return_optimizer(optimizer_name, maxiter):
         optimizer = SLSQP(maxiter=maxiter)
 
     return optimizer
-
-
-def run_sampling_vqe(ansatz, operator, optimizer, initial_point):
-    '''Runs VQE and samples the wavefunction at each iteration'''
-
-
-    binary_probabilities = []
-    expectation_values = []
-
-
-    #VQE Iteration.
-
-    def cost_function(ansatz, params, operator):
-        ansatz_temp = copy.deepcopy(ansatz)
-        result_estimator = estimator.run(ansatz_temp, operator, parameter_values=params).result()
-        expectation_value = np.real(result_estimator.values[0])
-        ansatz_temp = copy.deepcopy(ansatz)
-        #print(f'Parameters: {params}')
-        ansatz_temp.measure_all()
-        sample = sampler.run(circuits=ansatz_temp,
-                             parameter_values=params).result()
-        sample_binary_probabilities = sample.quasi_dists[0].binary_probabilities(
-        )
-
-        #print(f'Sample: {sample_binary_probabilities}')
-        #for key in sample_binary_probabilities:
-            #print(operator.eval(key))
-        # The statevector and expectation values are collected at each iteration
-        # for sonification
-
-        binary_probabilities.append(sample_binary_probabilities)
-        expectation_values.append(expectation_value)
-        return expectation_value
-
-    #sampler = Sampler(
-    #    backend_options={'method': 'automatic',
-    #                     'noise_model': None, 'basis_gates': None, 'coupling_map': None},
-    #    run_options={'shots': 1024})
-
-    print(f'Hardware Interface: {config.PLATFORM}')
-    print(f'Platform: {config.PLATFORM.backend}')
-    #print(f'Backend Name: {config.PLATFORM.backend.client.get_quantum_architecture().name}')
-    #print(f'Operations Available: {config.PLATFORM.backend.client.get_quantum_architecture().operations}')
-    #print(f'Qubits: {config.PLATFORM.backend.client.get_quantum_architecture().qubits}')
-    #print(f'Architecture: {config.PLATFORM.backend.client.get_quantum_architecture().qubit_connectivity}')
-    estimator = Estimator(options = {'backend': config.PLATFORM.backend, 'shots': 1024})
-
-    sampler = Sampler(options = {'shots': 1024})
-
-    result = optimizer.minimize(lambda x: cost_function(
-        ansatz=ansatz, params=x, operator=operator), x0=initial_point)
-
-    return result, binary_probabilities, expectation_values
 
 
 def binary_probabilities_to_loudness(binary_probabilities, variables_index):
@@ -286,13 +228,13 @@ def loudnesses_to_list_of_dicts(loudnesses):
             loudness_list_of_dicts[i][note] = loudness
     return loudness_list_of_dicts
 
-def compute_exact_solution(operator):
-    '''Minimum eigenvalue computed using NumPyMinimumEigensolver
-    for comparison with VQE'''
-    eigensolver = NumPyMinimumEigensolver()
-    result = eigensolver.compute_minimum_eigenvalue(operator)
-
-    return result
+#def compute_exact_solution(operator):
+#    '''Minimum eigenvalue computed using NumPyMinimumEigensolver
+#    for comparison with VQE'''
+#    eigensolver = NumPyMinimumEigensolver()
+#    result = eigensolver.compute_minimum_eigenvalue(operator)
+#
+#    return result
 
 # Main function
 def harmonize(qubos, **kwargs):
@@ -337,11 +279,13 @@ def harmonize(qubos, **kwargs):
         # copy ansatz to avoid VQE changing it
         ansatz_temp = copy.deepcopy(ansatz)
         #print(f'inital point: {initial_point}')
-        result, binary_probabilities, expectation_values = run_sampling_vqe(
+        vqe_experiment = SamplingVQE()
+        vqe_experiment.update_config()
+        result, binary_probabilities, expectation_values = vqe_experiment.run_vqe(
                 ansatz_temp, operator, optimizer, initial_point)
         valuess.extend(expectation_values)
         # Classical expectation value solution
-        numpy_result = compute_exact_solution(operator)
+        numpy_result = vqe_experiment.compute_exact_solution(operator)
         print("VQE RESULT", result.fun)
         #print("VQE BIN PROB", binary_probabilities)
         #print("VQE EXPECTATION VALUES", expectation_values)
@@ -420,10 +364,7 @@ def plot_loudness(loudnesses):
     ax.patch.set_alpha(COLORSCHEME['alpha'])
 
     # Different color styles for Debugging, Dependent Origination and ISQCMC Paper
-    #ax.set_prop_cycle(cycler('color', ['#a0dece', '#f7f7c1', '#f7f797', '#f5f56c', '#26c2d4', '#f883fc', '#baba2f', '#b4d4dc', '#96961b', '#bf1fc4', '#6b6b05', '#595900']))
     ax.set_prop_cycle(cycler('color', COLORSCHEME['chordcolors']))
-    #ax.set_prop_cycle(cycler('color', ['#a0dece', '#f7f7c1', '#f7f797', '#f5f56c', '#26c2d4', '#d6d649', '#baba2f', '#b4d4dc', '#96961b', '#80800d', '#6b6b05', '#595900']))
-    #ax.set_prop_cycle(cycler('color', ['#93abbe', '#202a23', '#c4c9d5', '#425547', '#336068', '#577b7d', '#4e656f', '#b4d4dc']))
     
     # Save plot
     for k in loudnesses:
@@ -449,13 +390,13 @@ def run_vqh(sessionname): # Function called by the main script for experiments a
 
     # Load latest config file
     with open("vqe_conf.json") as cfile:
-        config = json.load(cfile)
+        vqe_config = json.load(cfile)
 
-    PATH = f"{sessionname}_Data/Data_{config['nextpathid']}"
+    PATH = f"{sessionname}_Data/Data_{vqe_config['nextpathid']}"
     # Read QUBOs from 'h_setup.csv'
-    qubos = build_qubos_from_csv(config["sequence_length"], config["size"])
+    qubos = build_qubos_from_csv(vqe_config["sequence_length"], vqe_config["size"])
     # Obtain sonification parameters
-    loudnesses, values, states = harmonize(qubos, **config)
+    loudnesses, values, states = harmonize(qubos, **vqe_config)
     loudness_list_of_dicts = loudnesses_to_list_of_dicts(loudnesses)
     # logger.debug(loudness_list_of_dicts)
 
@@ -465,39 +406,40 @@ def run_vqh(sessionname): # Function called by the main script for experiments a
         json.dump(loudness_list_of_dicts, aggfile, indent=4)
 
     with open(f"{PATH}/vqe_conf.json", 'w') as cfile:
-        json.dump(config, cfile, indent=4)
+        json.dump(vqe_config, cfile, indent=4)
 
     copy2("h_setup.csv", f"{PATH}")
 
     norm_values = (values - min(values))/(abs(max(values)-min(values)))
     #print(type(states), type(norm_values.tolist()), loudnesses)
 
-    # Dependent Origination related code --------------------
-    corrected_loudnesses = [list(i.values()) for i in loudness_list_of_dicts]
-    corrected_states = [[int(j) for j in i] for i in states]
-    origination = {"states": corrected_states, "amps": corrected_loudnesses, "values": norm_values.tolist()}
-    
-    if not os.path.exists(f"{sessionname}_Data/to_pete"):
-        os.mkdir(f"{sessionname}_Data/to_pete")
-    
-    if not os.path.exists(f"{sessionname}_Data/to_pete/dependent_origination.json"):
-        with open(f"{sessionname}_Data/to_pete/dependent_origination.json", 'w') as dofile:
-            json.dump({}, dofile, indent=4)
-    
-    with open(f"{sessionname}_Data/to_pete/dependent_origination.json", 'r') as dofile:
-        old_data = json.load(dofile)
+#    # Dependent Origination related code --------------------
+#    corrected_loudnesses = [list(i.values()) for i in loudness_list_of_dicts]
+#    corrected_states = [[int(j) for j in i] for i in states]
+#    origination = {"states": corrected_states, "amps": corrected_loudnesses, "values": norm_values.tolist()}
+#    
+#    if not os.path.exists(f"{sessionname}_Data/to_pete"):
+#        os.mkdir(f"{sessionname}_Data/to_pete")
+#    
+#    if not os.path.exists(f"{sessionname}_Data/to_pete/dependent_origination.json"):
+#        with open(f"{sessionname}_Data/to_pete/dependent_origination.json", 'w') as dofile:
+#        json.dump({}, dofile, indent=4)
+#    
+#    with open(f"{sessionname}_Data/to_pete/dependent_origination.json", 'r') as dofile:
+#        old_data = json.load(dofile)
+#
+#    #print(old_data)
+#    #old_data[f"data_{vqe_config['nextpathid']}"] = origination
+#    old_data=origination
+#    with open(f"{sessionname}_Data/to_pete/dependent_origination.json", 'w') as dofile:
+#        json.dump(old_data, dofile, indent=4)
 
-    #print(old_data)
-    #old_data[f"data_{config['nextpathid']}"] = origination
-    old_data=origination
-    with open(f"{sessionname}_Data/to_pete/dependent_origination.json", 'w') as dofile:
-        json.dump(old_data, dofile, indent=4)
     # -------------------------------------------------------
 
     # Prepare next run
-    config['nextpathid'] += 1
+    vqe_config['nextpathid'] += 1
     with open("vqe_conf.json", 'w') as cfile:
-        json.dump(config, cfile, indent=4)
+        json.dump(vqe_config, cfile, indent=4)
 
     # Plot loudnesses (Dependent Origination)
     plot_loudness(loudnesses)
@@ -505,17 +447,12 @@ def run_vqh(sessionname): # Function called by the main script for experiments a
     return loudness_list_of_dicts, values
 
 
-def compute_exact_solution(operator):
-    '''Minimum eigenvalue computed using NumPyMinimumEigensolver'''
-    eigensolver = NumPyMinimumEigensolver()
-    result = eigensolver.compute_minimum_eigenvalue(operator)
-    
-    return result
 
 class HarpProtocol(VQHProtocol):
 
     def __init__(self, name):
         self.name = name
+        self.data = None
 
     def run(self, sessionname):
         #config.PLATFORM = hwi

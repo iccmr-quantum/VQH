@@ -20,12 +20,12 @@ You can listen to music that has used the VQH in its artistic process:
 - Create a python environment (>3.10 recommended)
 
 Python dependencies:
-`qiskit`, `qiskit-optimization`, `qiskit-aer`, `qiskit-iqm`, `iqm-cortex-cli`, `numpy`, `matplotlib`, `prompt_toolkit`, `python-osc`, [`python-supercollider`](https://pypi.org/project/supercollider/)
+`qiskit`, `qiskit-optimization`, `qiskit-aer`, `qiskit-iqm`, `iqm-cortex-cli`, `numpy`, `matplotlib`, `PyQt5`, `prompt_toolkit`, `python-osc`, [`python-supercollider`](https://pypi.org/project/supercollider/)
 
 Installing dependencies with pip:
 
 ```bash
-pip install qiskit qiksit-optimization qiskit-aer qiskit-iqm iqm-cortex-cli numpy matplotlib prompt_toolkit python-osc supercollider
+pip install qiskit qiskit-optimization qiskit-aer qiskit-iqm iqm-cortex-cli numpy matplotlib pyqt5 prompt_toolkit python-osc supercollider
 ```
 
 
@@ -81,8 +81,8 @@ _If you have done this at least once, you can proceed directly to the next step.
 Refer to the [paper](https://doi.org/10.5281/zenodo.10206731) for a more detailed description on some of the sonification types.
 
 
-	`1` - Additive Synthesis
-	`2` - Subtractive Synthesis
+	`1` - Additive Synthesis (12 Qubits)
+	`2` - Additive Synthesis (8 Qubits)
 	`3` - Arpeggios
 	
 	

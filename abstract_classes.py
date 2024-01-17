@@ -43,11 +43,14 @@ class SonificationInterface(ABC):
     def __init__(self, n):
         self.platform = None
 
-    @abstractmethod
-    async def map_data(self):
-        pass
+#    @abstractmethod
+#    async def map_data(self):
+#        pass
+    def map_data(self, method, data, **kwargs):
+        getattr(self, method)(data, **kwargs)
+        
 
-    @abstractmethod
-    async def play(self):
-        pass
+#    @abstractmethod
+#    async def play(self):
+#        pass
 
