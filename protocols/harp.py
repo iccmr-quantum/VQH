@@ -45,7 +45,7 @@ color_mode = 'isqcmc'
 #color_mode = 'isqcmc_cmajor'
 #color_mode = 'isqcmc_iivvi'
 global COLORSCHEME
-with open('plot_colors.json', 'r') as f:
+with open('protocols/plot_colors.json', 'r') as f:
     COLORSCHEME = json.load(f)[color_mode]
 
 def build_qubos_from_csv(n_of_ham=4, n_of_notes=12):

@@ -8,13 +8,11 @@
 # CQTA, DESY Zeuthen, Germany
 # Universitat Pompeu Fabra, Spain
 #
-# Jan 2023
+# Jan 2023 - Jan 2024
 #===========================================
 # VQE and Quantum Computing part
 from qiskit import IBMQ
 
-# SuperCollider, Sonification and Synthesis part
-#import synth.sc_functions as sc
 
 # Logging and global variables
 import logging
@@ -24,9 +22,13 @@ import time
 # Global variables
 import config
 
-
+# Quantum Hardware Connection
 from hardware.hardware_library import HardwareLibrary
+
+# Encoders, Decoders, Models
 from protocols.protocol_library import ProtocolLibrary
+
+# SuperCollider, Sonification and Synthesis part
 from synth.sonification_library import SonificationLibrary
 
 # Event Management
