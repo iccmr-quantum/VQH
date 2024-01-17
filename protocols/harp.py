@@ -444,7 +444,7 @@ def run_vqh(sessionname): # Function called by the main script for experiments a
     # Plot loudnesses (Dependent Origination)
     plot_loudness(loudnesses)
     plot_values(values)
-    return loudness_list_of_dicts, values
+    return loudness_list_of_dicts, values, states
 
 
 

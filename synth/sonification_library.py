@@ -1,12 +1,12 @@
 from abstract_classes import SonificationInterface
 from synth.sc import SuperColliderMapping
-#from synth.zen import ZenMapping
+from synth.zen import ZenMapping
 
 class SonificationLibrary():
     def __init__(self):
         self._interfaces = {
             "sc": SuperColliderMapping,
-#            "zen": ZenMapping
+            "zen": ZenMapping
         }
         self._library = {
             1: {
@@ -23,6 +23,11 @@ class SonificationLibrary():
                 "description": "Pitchshifted Arpeggios instead of chords",
                 "interface": "sc",
                 "mapping": "note_cluster_intensity"
+            },
+            4: {
+                "description": "Send data to Zen, to be stored as a new Book",
+                "interface": "zen",
+                "mapping": "post_book"
             },
 
         }

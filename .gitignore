@@ -14,3 +14,4 @@ sort_paulis.py
 to_pete_template/*.pem
 to_pete_template/node_modules/
 test.py
+synth/credentials_zen_local.json

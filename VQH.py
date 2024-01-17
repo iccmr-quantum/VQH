@@ -119,9 +119,17 @@ class VQH:
         path = f"{folder}_Data/Data_{num}"
         with open(f"{path}/aggregate_data.json") as afile:
             dist = json.load(afile)
+
         with open(f"{path}/exp_values.txt") as efile:
             vals = [float(val.rstrip()) for val in efile]
-        self.datafile = (dist, vals)
+
+        states = []
+        with open(f"{path}/max_prob_states.txt", 'r') as file:
+            for line in file:
+                state_list = [int(char) for char in line.strip()]
+                states.append(state_list)
+
+        self.datafile = (dist, vals, states)
         self.synth, method = self.sonification_library.get_mapping(son_type)
         self.synth.map_data(method, self.datafile, **kwargs)
 
