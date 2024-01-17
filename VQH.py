@@ -14,7 +14,7 @@
 from qiskit import IBMQ
 
 # SuperCollider, Sonification and Synthesis part
-import synth.sc_functions as sc
+#import synth.sc_functions as sc
 
 # Logging and global variables
 import logging
@@ -27,6 +27,7 @@ import config
 
 from hardware.hardware_library import HardwareLibrary
 from protocols.protocol_library import ProtocolLibrary
+from synth.sonification_library import SonificationLibrary
 
 # Event Management
 import json
@@ -56,7 +57,7 @@ last = False
 reset = True
 port = ''
 
-VALID_COMMANDS = ['play', 'runvqe', 'q', 'quit', 'stop', 'playfile']
+VALID_COMMANDS = ['play', 'runvqe', 'q', 'quit', 'stop', 'playfile', 'map', 'mapfile']
 
 
 # Play sonification from a previously generated file
@@ -74,7 +75,7 @@ class VQH:
     def __init__(self, protocol_name, hwi_name, soni_name=None):
         self.hardware_library = HardwareLibrary()
         self.protocol_library = ProtocolLibrary()
-        #self.sonification_library = SonificationLibrary() # There will be a sonification library
+        self.sonification_library = SonificationLibrary() # There will be a sonification library
         
         self.protocol = self.protocol_library.get_protocol(protocol_name)
         config.PROTOCOL = self.protocol
@@ -88,12 +89,16 @@ class VQH:
         print(f'Connected to HWI: {self.hardware_interface}, {self.hardware_interface.provider}, {self.hardware_interface.backend}')
         
         self.session_name = None
+        self.synth = None
+
+        self.data = None
 
     def runvqe(self, sessionname = "Default"):
 
         self.session_name = sessionname
         # The function below is the main function inside your protocol class
-        self.protocol.run(self.session_name)
+        self.data = self.protocol.run(self.session_name)
+        self.datafile = None
     
     # Play sonification from a previously generated file
     def playfile(num, folder, son_type=1):
@@ -105,10 +110,26 @@ class VQH:
         sc.sonify(dist, vals, son_type)
                 
     def play(self, son_type=1):
-        generated_quasi_dist, generated_values = self.protocol.data
+        generated_quasi_dist, generated_values = self.data
         sc.sonify(generated_quasi_dist, generated_values, son_type)
 
+    def mapfile(self, num, folder, son_type=1, **kwargs):
+        path = f"{folder}_Data/Data_{num}"
+        with open(f"{path}/aggregate_data.json") as afile:
+            dist = json.load(afile)
+        with open(f"{path}/exp_values.txt") as efile:
+            vals = [float(val.rstrip()) for val in efile]
+        self.datafile = (dist, vals)
+        self.synth, method = self.sonification_library.get_mapping(son_type)
+        self.synth.map_data(method, self.datafile, **kwargs)
 
+
+    def map_sonification(self, son_type=1, **kwargs):
+        self.synth, method = self.sonification_library.get_mapping(son_type)
+        self.synth.map_data(method, self.data, **kwargs)
+
+    def stop_sc_sound(self):
+        self.synth.freeall()
 
 
 def is_command(cmd):
@@ -156,7 +177,8 @@ def CLI(vqh):
         
         # Same as using ctrl+. in SuperCollider
         elif x[0] == 'stop':
-            sc.freeall()
+            #sc.freeall()
+            vqh.stop_sc_sound()
         
         # Sonify the last generated VQE result
         elif x[0] == 'play':
@@ -168,6 +190,23 @@ def CLI(vqh):
                 vqh.play(son_type)
             else:
                 print("Quasi Dists NOT generated!")
+
+        elif x[0] == 'map':
+            if vqh.data:
+                son_type = 1
+                if len(x) == 2:
+                    son_type = int(x[1])
+                #sc.sonify(generated_quasi_dist, generated_values, son_type)
+                vqh.map_sonification(son_type)
+                
+            else:
+                print("Quasi Dists NOT generated!")
+        elif x[0] == 'mapfile':
+            son_type = 1
+            if len(x) == 3:
+                son_type = int(x[2])
+            #playfile(x[1], config.SESSIONPATH, son_type)
+            vqh.mapfile(x[1], config.SESSIONPATH, son_type)
 
         else:
             print(f'Not a valid input - {x}')

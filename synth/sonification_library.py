@@ -1,19 +1,43 @@
 from abstract_classes import SonificationInterface
 from synth.sc import SuperColliderMapping
-from synth.zen import ZenMapping
+#from synth.zen import ZenMapping
 
 class SonificationLibrary():
     def __init__(self):
-        self._sl_interfaces = {
+        self._interfaces = {
             "sc": SuperColliderMapping,
-            "zen": ZenMapping
+#            "zen": ZenMapping
         }
-    def get_sonification_interface(self, interface_name: str) -> QuantumHardwareInterface:
+        self._library = {
+            1: {
+                "description": "Additive Synthesis with 12 chromatic notes",
+                "interface": "sc",
+                "mapping": "note_loudness_multiple"
+            },
+            2: {
+                "description": "Additive Synthesis with 8 chromatic notes",
+                "interface": "sc",
+                "mapping": "note_loudness_multiple_8_qubits"
+            },
+            3: {
+                "description": "Pitchshifted Arpeggios instead of chords",
+                "interface": "sc",
+                "mapping": "note_cluster_intensity"
+            },
+
+        }
+    def get_mapping(self, son_type: int) -> SonificationInterface:
         """Returns: sonification interface class associated with name.
         """
-        son_i = self._sl_interfaces.get(interface_name)
-        if not son_i:
-            raise ValueError(f'"{interface_name}" is not a valid name. Valid names are: {list(self._sl_interfaces.keys())}')
-        return son_i()
+
+        son = self._library.get(son_type)
+        if not son:
+            raise ValueError(f'"{son_type}" is not a valid number. Valid names are: {list(self._library.keys())}')
+
+        son_interface = self._interfaces.get(son["interface"])
+        son_mapping = son["mapping"]
+
+        #return getattr(son_interface, son_mapping)
+        return son_interface(), son_mapping
 
 

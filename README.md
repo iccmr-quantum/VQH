@@ -81,8 +81,8 @@ _If you have done this at least once, you can proceed directly to the next step.
 Refer to the [paper](https://doi.org/10.5281/zenodo.10206731) for a more detailed description on some of the sonification types.
 
 
-	`1` - Additive Synthesis
-	`2` - Subtractive Synthesis
+	`1` - Additive Synthesis (12 Qubits)
+	`2` - Additive Synthesis (8 Qubits)
 	`3` - Arpeggios
 	
 	

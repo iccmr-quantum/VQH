@@ -451,6 +451,7 @@ class HarpProtocol(VQHProtocol):
 
     def __init__(self, name):
         self.name = name
+        self.data = None
 
     def run(self, sessionname):
         #config.PLATFORM = hwi
