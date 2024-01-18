@@ -126,8 +126,9 @@ class VQH:
         states = []
         with open(f"{path}/max_prob_states.txt", 'r') as file:
             for line in file:
-                state_list = [int(char) for char in line.strip()]
-                states.append(state_list)
+                #state_list = [int(char) for char in line.strip()]
+                #states.append(state_list)
+                states.append(line.rstrip())
 
         self.datafile = (dist, vals, states)
         self.synth, method = self.sonification_library.get_mapping(son_type)

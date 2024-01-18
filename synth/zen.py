@@ -27,6 +27,7 @@ class ZenMapping(SonificationInterface):
     def post_book(self, data, **kwargs):
         """Post a book to the database"""
         bookid = self.get_last_book_id()
+        #bookid = "book_6"
         if bookid.startswith('book_'):
             bookid = int(bookid[5:])
         
@@ -40,8 +41,8 @@ class ZenMapping(SonificationInterface):
         print(self._headers)
 
         data_dict = {}
-        data_dict['states'] = data[2]
-        data_dict['amps'] = data[0]
+        data_dict['states'] = [[int(x) for x in state] for state in data[2]]
+        data_dict['amps'] = [[x for x in dist.values()] for dist in data[0]]
         data_dict['values'] = data[1]
 
         data_msg = {
@@ -50,8 +51,8 @@ class ZenMapping(SonificationInterface):
             "password": self.pwd
         }
 
+        #print(data_dict)
         self.current_data = data
-
         response = requests.post(self._data_url, data=json.dumps(data_msg), headers=self._headers)
 
     def get_book(self, **kwargs):
