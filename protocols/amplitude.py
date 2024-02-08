@@ -49,9 +49,9 @@ from abstract_classes import VQHProtocol, QuantumHardwareInterface
 
 
 # STEP 1: BUILD THE HAMILTONIAN OPERATOR FROM THE CSV FILE
-# TODO: The function below was copied from the 'new_encodings' branch. It may contain bugs. Needs to be tested.
+# TODO: Notes has no meaning here. Notes are defined by the basis statevectors. For now, we will keep the same structure, but we will have to change it in the future.
 
-def build_operators_from_csv(n_of_ham=2, n_of_notes=8):
+def build_operators_from_csv(n_of_ham=2, num_qubits=4):
     # Function that builds the Hamiltonian operator from the CSV file
     
     with open("operator_setup.csv", 'r') as hcsv:
@@ -60,28 +60,28 @@ def build_operators_from_csv(n_of_ham=2, n_of_notes=8):
     #header = hsetup.pop(0)
     #logger.debug(f'CSV Header: {header}')
     #n_of_ham = int(header[1])
-    #n_of_notes = int(header[2])
-    operators_variables_index = []
+    #num_qubits = int(header[2])
+    operators = []
 
     for h in range(n_of_ham):
-        notes = hsetup.pop(h*n_of_notes)[1:]
-        matrix_dict = {(row[0], notes[i]): float(
-            n) for row in hsetup[h*n_of_notes:h*n_of_notes+n_of_notes] for i, n in enumerate(row[1:])}
+        qubits = hsetup.pop(h*num_qubits)[1:]
+        matrix_dict = {(row[0], qubits[i]): float(
+            n) for row in hsetup[h*num_qubits:h*num_qubits+num_qubits] for i, n in enumerate(row[1:])}
         #logger.debug(f'QUBOS: {qubos}')
-        variables_index = {notes[i]: i for i in range(n_of_notes)}
+        variables_index = {qubits[i]: i for i in range(num_qubits)}
 
         print(matrix_dict)
 
-        matrix = np.zeros((n_of_notes, n_of_notes))
+        matrix = np.zeros((num_qubits, num_qubits))
         for key, value in matrix_dict.items():
             matrix[variables_index[key[0]], variables_index[key[1]]] = value
 
         print(matrix)
-        operator = SparsePauliOp.from_operator(Operator(matrix))
+        operator = PauliSumOp(SparsePauliOp.from_operator(Operator(matrix)))
         print(operator)
-        operators_variables_index.append((operator, variables_index))
+        operators.append(operator)
 
-    return operators_variables_index
+    return operators
 
 
 # STEP 2: SELECT THE OPTIMIZER AND RUN VQE
@@ -157,22 +157,37 @@ def run_sampling_vqe(ansatz, operator, optimizer, initial_point):
 
 # STEP 3: CONVERT THE BINARY PROBABILITIES TO LOUDNESSES IN THE PRINT FORMAT
 
-def binary_probabilities_to_loudness(binary_probabilities, variables_index):
+# def binary_probabilities_to_loudness(binary_probabilities):
+#     # Function that converts the binary probabilities to loudnesses without using marginal probabilities. It returns the loudnesses in what we call the "Print Format", which is a dictionary of lists
+
+#     # Create empty dict of lists
+#     loudnesses = {v: np.zeros(len(binary_probabilities)) for v in variables_index}
+
+#     # Take the coefficients of each state and create directly the loudnesses dict of lists
+#     for iteration, binary_probability in enumerate(binary_probabilities):
+#         for key, value in binary_probability.items():
+#             note = key
+#             if note in loudnesses:
+#                 loudnesses[note][iteration] += value
+#             else:
+#                 # Handle the case where the note is not in loudnesses initializing it with zeros and then adding the value
+#                 loudnesses[note] = np.zeros(len(binary_probabilities))
+#                 loudnesses[note][iteration] = value
+#     return loudnesses
+
+def binary_probabilities_to_loudness(binary_probabilities):
     # Function that converts the binary probabilities to loudnesses without using marginal probabilities. It returns the loudnesses in what we call the "Print Format", which is a dictionary of lists
 
-    # Create empty dict of lists
-    loudnesses = {v: np.zeros(len(binary_probabilities)) for v in variables_index}
-
     # Take the coefficients of each state and create directly the loudnesses dict of lists
+    loudnesses = {}
     for iteration, binary_probability in enumerate(binary_probabilities):
         for key, value in binary_probability.items():
-            note = key
-            if note in loudnesses:
-                loudnesses[note][iteration] += value
+            if key in loudnesses:
+                loudnesses[key][iteration] += value
             else:
                 # Handle the case where the note is not in loudnesses initializing it with zeros and then adding the value
-                loudnesses[note] = np.zeros(len(binary_probabilities))
-                loudnesses[note][iteration] = value
+                loudnesses[key] = np.zeros(len(binary_probabilities))
+                loudnesses[key][iteration] = value
     return loudnesses
 
 # STEP 4: CONVERT THE LOUDNESSES TO A LIST OF DICTS IN THE SONIFICATION FORMAT
@@ -253,7 +268,7 @@ def plot_loudness(loudnesses):
 
 # STEP 6: HARMONIZE (TODO:NEEDS CLEANING)
 
-def harmonize(operators_variables_index, **kwargs):
+def harmonize(operators, **kwargs):
     '''Run harmonizer algorithm for list of qubos and list of iterations. VQE is performed for the i-th qubo for i-th number of iterations.'''
     global PATH
     QD = []
@@ -263,10 +278,9 @@ def harmonize(operators_variables_index, **kwargs):
     operatorss = []
     # loop over qubos
     os.makedirs(PATH, exist_ok=True)
-    for count, operator_var_idx in enumerate(operators_variables_index):
+    for count, operator in enumerate(operators):
         print(f'Working on hamiltonian #{count}')
         
-        operator, variables_index = operators_variables_index[count]
         #logger.debug(f'operator: {operator}')
         
         #Optimizer
@@ -313,10 +327,10 @@ def harmonize(operators_variables_index, **kwargs):
         #print("Eigenvector", binary_probabilities[:-1])
         if count == 0: 
             loudnesses = binary_probabilities_to_loudness(
-                binary_probabilities, variables_index)
+                binary_probabilities)
         else:
             loudnesses_temp = binary_probabilities_to_loudness(
-                binary_probabilities, variables_index)
+                binary_probabilities)
             for key, value in loudnesses_temp.items():
                 loudnesses[key] = np.append(loudnesses[key], value)
 
@@ -357,9 +371,9 @@ def run_vqh_amplitude(sessionname): # Function called by the main script for exp
 
     PATH = f"{sessionname}_Data/Data_{config['nextpathid']}"
     # Read HAMILTONIANS from 'h_setup.csv'
-    operators_variables_index = build_operators_from_csv(config["sequence_length"], config["size"])
+    operators = build_operators_from_csv(config["sequence_length"], config["size"])
     # Obtain sonification parameters
-    loudnesses, values, states = harmonize(operators_variables_index , **config)
+    loudnesses, values, states = harmonize(operators , **config)
     loudness_list_of_dicts = loudnesses_to_list_of_dicts(loudnesses)
     # logger.debug(loudness_list_of_dicts)
 
