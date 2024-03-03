@@ -88,7 +88,7 @@ class VQH:
         self.hardware_interface.get_backend()
         config.PLATFORM = self.hardware_interface
 
-        print(f'Connected to HWI: {self.hardware_interface}, {self.hardware_interface.provider}, {self.hardware_interface.backend}')
+        #print(f'Connected to HWI: {self.hardware_interface}, {self.hardware_interface.provider}, {self.hardware_interface.backend}')
         
         self.session_name = None
         self.synth = None

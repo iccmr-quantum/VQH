@@ -76,7 +76,7 @@ class SamplingVQE():
             return expectation_value
 
         print(f'Hardware Interface: {config.PLATFORM}')
-        print(f'Platform: {config.PLATFORM.backend}')
+        #print(f'Platform: {config.PLATFORM.backend}')
 
         estimator = Estimator(options = {'backend': config.PLATFORM.backend, 'shots': 1024})
 
