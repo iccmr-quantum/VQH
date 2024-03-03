@@ -3,6 +3,8 @@
 *.pyc
 *.swp
 **_Data/
+**EMS**
+processing**
 Data*/
 Untitled.ipynb
 vqe_sounds/
@@ -15,3 +17,11 @@ to_pete_template/*.pem
 to_pete_template/node_modules/
 test.py
 synth/credentials_zen_local.json
+testproj/
+display_hexagonal_chambers/*/
+display_hexagonal_chambers/LICENSE.txt
+display_hexagonal_chambers/jre
+display_hexagonal_chambers/sketch.properties
+display_hexagonal_chambers/test.dat
+display_hexagonal_chambers/test2.dat
+java_hexagonal_chambers/

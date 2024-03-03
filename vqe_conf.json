@@ -4,9 +4,9 @@
     "optimizer_name": "SPSA",
     "sequence_length": 1,
     "size": 6,
-    "description": "ISQCMC Matrices Transverse Field Phase Transition",
+    "description": "CTM - Hexagonal Chambers",
     "iterations": [
-        230
+        416
     ],
-    "nextpathid": 18
+    "nextpathid": 104
 }
