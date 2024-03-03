@@ -1,12 +1,12 @@
 from abstract_classes import SonificationInterface
 from synth.sc import SuperColliderMapping
-#from synth.zen import ZenMapping
+from synth.zen import ZenMapping
 
 class SonificationLibrary():
     def __init__(self):
         self._interfaces = {
             "sc": SuperColliderMapping,
-#            "zen": ZenMapping
+            "zen": ZenMapping
         }
         self._library = {
             1: {
@@ -24,7 +24,16 @@ class SonificationLibrary():
                 "interface": "sc",
                 "mapping": "note_cluster_intensity"
             },
-
+            4: {
+                "description": "Send data to Zen, to be stored as a new Book",
+                "interface": "zen",
+                "mapping": "post_book"
+            },
+            5: {
+                "description": "Send data to Zen, to be stored as a new Book, and send data to Processing to be displayed",
+                "interface": "zen",
+                "mapping": "post_book_and_update_display"
+            },
         }
     def get_mapping(self, son_type: int) -> SonificationInterface:
         """Returns: sonification interface class associated with name.

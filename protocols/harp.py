@@ -45,7 +45,7 @@ color_mode = 'isqcmc'
 #color_mode = 'isqcmc_cmajor'
 #color_mode = 'isqcmc_iivvi'
 global COLORSCHEME
-with open('plot_colors.json', 'r') as f:
+with open('protocols/plot_colors.json', 'r') as f:
     COLORSCHEME = json.load(f)[color_mode]
 
 def build_qubos_from_csv(n_of_ham=4, n_of_notes=12):
@@ -100,7 +100,7 @@ def H_Ising(N,J,hx):# Arianna Crippa's Ising model implementation for comparison
 
     return H_Ising
 
-def qubo_to_operator(qubo, count, linear_pauli='Z', external_field=0):
+def qubo_to_operator(qubo, count, linear_pauli='Z', external_field=-9):
     '''Translates qubo problems of format {(note_1, note_2): coupling, ...} to operators to be used in VQE.
     This function can yield non-diagonal Hamiltonians.
     
@@ -442,9 +442,9 @@ def run_vqh(sessionname): # Function called by the main script for experiments a
         json.dump(vqe_config, cfile, indent=4)
 
     # Plot loudnesses (Dependent Origination)
-    plot_loudness(loudnesses)
-    plot_values(values)
-    return loudness_list_of_dicts, values
+    #plot_loudness(loudnesses)
+    #plot_values(values)
+    return loudness_list_of_dicts, values, states
 
 
 

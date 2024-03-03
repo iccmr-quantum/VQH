@@ -8,13 +8,11 @@
 # CQTA, DESY Zeuthen, Germany
 # Universitat Pompeu Fabra, Spain
 #
-# Jan 2023
+# Jan 2023 - Jan 2024
 #===========================================
 # VQE and Quantum Computing part
 from qiskit import IBMQ
 
-# SuperCollider, Sonification and Synthesis part
-#import synth.sc_functions as sc
 
 # Logging and global variables
 import logging
@@ -24,9 +22,13 @@ import time
 # Global variables
 import config
 
-
+# Quantum Hardware Connection
 from hardware.hardware_library import HardwareLibrary
+
+# Encoders, Decoders, Models
 from protocols.protocol_library import ProtocolLibrary
+
+# SuperCollider, Sonification and Synthesis part
 from synth.sonification_library import SonificationLibrary
 
 # Event Management
@@ -86,7 +88,7 @@ class VQH:
         self.hardware_interface.get_backend()
         config.PLATFORM = self.hardware_interface
 
-        print(f'Connected to HWI: {self.hardware_interface}, {self.hardware_interface.provider}, {self.hardware_interface.backend}')
+        #print(f'Connected to HWI: {self.hardware_interface}, {self.hardware_interface.provider}, {self.hardware_interface.backend}')
         
         self.session_name = None
         self.synth = None
@@ -117,9 +119,18 @@ class VQH:
         path = f"{folder}_Data/Data_{num}"
         with open(f"{path}/aggregate_data.json") as afile:
             dist = json.load(afile)
+
         with open(f"{path}/exp_values.txt") as efile:
             vals = [float(val.rstrip()) for val in efile]
-        self.datafile = (dist, vals)
+
+        states = []
+        with open(f"{path}/max_prob_states.txt", 'r') as file:
+            for line in file:
+                #state_list = [int(char) for char in line.strip()]
+                #states.append(state_list)
+                states.append(line.rstrip())
+
+        self.datafile = (dist, vals, states)
         self.synth, method = self.sonification_library.get_mapping(son_type)
         self.synth.map_data(method, self.datafile, **kwargs)
 

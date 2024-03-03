@@ -211,7 +211,7 @@ color_mode = 'isqcmc'
 #color_mode = 'isqcmc_cmajor'
 #color_mode = 'isqcmc_iivvi'
 global COLORSCHEME
-with open('plot_colors.json', 'r') as f:
+with open('protocols/plot_colors.json', 'r') as f:
     COLORSCHEME = json.load(f)[color_mode]
 
 def plot_values(values):
