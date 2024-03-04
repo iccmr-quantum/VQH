@@ -12,6 +12,8 @@ global FREQDICTL
 FREQDICTL = {"l1":60, "l2":61, "l3":62, "l4":63, "l5":64, "l6":65, "l7":66, "l8":67, "l9":68, "l10":69, "l11":70, "l12":71}
 global EXAMPLE
 EXAMPLE = {"l1":"amp1", "l2":"amp2", "l3":"amp3", "l4":"amp4", "l5":"amp5", "l6":"amp6", "l7":"amp7", "l8":"amp8"}
+global EXAMPLE6
+EXAMPLE6 = {"s0":"amp1", "s1":"amp2", "s2":"amp3", "s3":"amp4", "s4":"amp5", "s5":"amp6"}
 
 class SuperColliderMapping(SonificationInterface):
     def __init__(self):
@@ -48,6 +50,23 @@ class SuperColliderMapping(SonificationInterface):
             print(state)
             for k, amp in state.items():
                 synth.set(EXAMPLE[k], amp)
+            time.sleep(0.03)
+
+# Mapping #4 - Simple additive synthesis - 6 qubits
+    def note_loudness_multiple_6_qubits(self, data, **kwargs):
+        global EXAMPLE6 
+        loudnessstream = data[0]
+
+
+        labels = ["amp1", "amp2", "amp3", "amp4", "amp5", "amp6"]
+        loudness = np.zeros(6)
+        args = dict(zip(labels,loudness))
+        synth = Synth(self.server, "vqe_model1_6q", args)
+
+        for state in loudnessstream:
+            print(state)
+            for k, amp in state.items():
+                synth.set(EXAMPLE6[k], amp)
             time.sleep(0.03)
 
 # Mapping #3 - Pitchshifted Arpeggios instead of chords. Philip Glass vibes.
