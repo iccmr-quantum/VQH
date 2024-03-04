@@ -39,6 +39,11 @@ class SonificationLibrary():
                 "interface": "sc",
                 "mapping": "note_loudness_multiple_6_qubits"
             },
+            7: {
+                "description": "Additive Synthesis with 4 chromatic notes",
+                "interface": "sc",
+                "mapping": "note_loudness_multiple_4_qubits"
+            },
         }
     def get_mapping(self, son_type: int) -> SonificationInterface:
         """Returns: sonification interface class associated with name.

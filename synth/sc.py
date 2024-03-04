@@ -14,6 +14,8 @@ global EXAMPLE
 EXAMPLE = {"l1":"amp1", "l2":"amp2", "l3":"amp3", "l4":"amp4", "l5":"amp5", "l6":"amp6", "l7":"amp7", "l8":"amp8"}
 global EXAMPLE6
 EXAMPLE6 = {"s0":"amp1", "s1":"amp2", "s2":"amp3", "s3":"amp4", "s4":"amp5", "s5":"amp6"}
+global EXAMPLE4
+EXAMPLE4 = {"00":"amp1", "01":"amp2", "10":"amp3", "11":"amp4"}
 
 class SuperColliderMapping(SonificationInterface):
     def __init__(self):
@@ -67,6 +69,23 @@ class SuperColliderMapping(SonificationInterface):
             print(state)
             for k, amp in state.items():
                 synth.set(EXAMPLE6[k], amp)
+            time.sleep(0.03)
+
+# Mapping #4 - Simple additive synthesis - 4 qubits
+    def note_loudness_multiple_4_qubits(self, data, **kwargs):
+        global EXAMPLE4 
+        loudnessstream = data[0]
+
+
+        labels = ["amp1", "amp2", "amp3", "amp4"]
+        loudness = np.zeros(4)
+        args = dict(zip(labels,loudness))
+        synth = Synth(self.server, "vqe_model1_4q", args)
+
+        for state in loudnessstream:
+            print(state)
+            for k, amp in state.items():
+                synth.set(EXAMPLE4[k], amp)
             time.sleep(0.03)
 
 # Mapping #3 - Pitchshifted Arpeggios instead of chords. Philip Glass vibes.

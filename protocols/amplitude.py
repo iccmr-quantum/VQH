@@ -26,6 +26,7 @@ import config
 from shutil import copy2
 
 from abstract_classes import VQHProtocol, QuantumHardwareInterface
+from vqe.vqe_experiments import SamplingVQE
 
 mpl.rcParams['toolbar'] = 'None'
 mpl.rcParams['lines.linewidth'] = .8
@@ -51,7 +52,7 @@ from abstract_classes import VQHProtocol, QuantumHardwareInterface
 # STEP 1: BUILD THE HAMILTONIAN OPERATOR FROM THE CSV FILE
 # TODO: Notes has no meaning here. Notes are defined by the basis statevectors. For now, we will keep the same structure, but we will have to change it in the future.
 
-def build_operators_from_csv(n_of_ham=2, num_qubits=4):
+def build_operators_from_csv(n_of_ham=2, num_qubits=2):
     # Function that builds the Hamiltonian operator from the CSV file
     
     with open("operator_setup.csv", 'r') as hcsv:
@@ -61,18 +62,23 @@ def build_operators_from_csv(n_of_ham=2, num_qubits=4):
     #logger.debug(f'CSV Header: {header}')
     #n_of_ham = int(header[1])
     #num_qubits = int(header[2])
+    print(f'H_setup: {hsetup}')
     operators = []
 
     for h in range(n_of_ham):
         qubits = hsetup.pop(h*num_qubits)[1:]
+        print(f'Qubits: {qubits}')
         matrix_dict = {(row[0], qubits[i]): float(
             n) for row in hsetup[h*num_qubits:h*num_qubits+num_qubits] for i, n in enumerate(row[1:])}
         #logger.debug(f'QUBOS: {qubos}')
-        variables_index = {qubits[i]: i for i in range(num_qubits)}
+        print(f'Matrix Dict: {matrix_dict}')
+        variables_index = {qubits[i]: i for i,q in enumerate(qubits)}
+        print(f'Variables Index: {variables_index}')
 
-        print(matrix_dict)
 
+        print(f'num_qubits: {num_qubits}')
         matrix = np.zeros((num_qubits, num_qubits))
+        print(matrix)
         for key, value in matrix_dict.items():
             matrix[variables_index[key[0]], variables_index[key[1]]] = value
 
@@ -82,6 +88,128 @@ def build_operators_from_csv(n_of_ham=2, num_qubits=4):
         operators.append(operator)
 
     return operators
+
+
+def build_qubos_from_csv(n_of_ham=4, n_of_notes=12):
+    '''Builds a list of qubos from a csv file. 
+    The csv file must be in the same folder as this script and must be named 
+    "h_setup.csv". The csv file must have the following format:
+    
+    h1,label1,label2,label3,...,labeln
+    label1,c11,c12,c13,...,c1n
+    label2,c21,c22,c23,...,c2n
+    label3,c31,c32,c33,...,c3n
+    ...
+    labeln,cn1,cn2,cn3,...,cnn
+    h2,label1,label2,label3,...,labeln
+    label1,c11,c12,c13,...,c1n
+    ...
+    
+    where h1, h2, ... are the QUBO matrices names and label1, label2, ... are the
+    note labels used by the sonification.
+
+    The function returns a list of qubos of the form:
+    [{(note_1, note_2): coupling, ...}, ...]
+    where note_1 and note_2 are the note labels with its corresponding coupling
+    coefficients.
+    '''
+
+    with open("h_setup.csv", 'r') as hcsv:
+        hsetup = list(csv.reader(hcsv, delimiter=','))
+
+    #header = hsetup.pop(0)
+    #logger.debug(f'CSV Header: {header}')
+    #n_of_ham = int(header[1])
+    #n_of_notes = int(header[2])
+    qubos = []
+    for h in range(n_of_ham):
+        notes = hsetup.pop(h*n_of_notes)[1:]
+        qubos.append({(row[0], notes[i]): float(n) for row in hsetup[h*n_of_notes:h*n_of_notes+n_of_notes] for i, n in enumerate(row[1:])})
+    logger.debug(f'QUBOS: {qubos}')
+
+    return qubos
+
+
+def qubo_to_operator(qubo, count, linear_pauli='Z', external_field=+0):
+    '''Translates qubo problems of format {(note_1, note_2): coupling, ...} to operators to be used in VQE.
+    This function can yield non-diagonal Hamiltonians.
+    
+    The resulting Hamitonian H is equal to the QUBO Q up to a constant factor 
+    and a constant shift that do not impact the optimization
+    H = 4*Q + const
+    Q = H/4 - const/4 = operator + offset
+    
+    '''
+   # First, we need to create a dictionary that maps the variables to their index in the operator
+   # We make sure that the qubo is symmetric and that we only have one term for each pair of variables
+    qubo_index = {}
+    variables_index = {}
+    count_index = 0
+    for key, value in qubo.items():
+        if key[0] not in variables_index:
+            variables_index[key[0]] = count_index
+            count_index += 1
+        if key[1] not in variables_index:
+            variables_index[key[1]] = count_index
+            count_index += 1
+        if key[0] == key[1]:
+            i = variables_index[key[0]]
+            qubo_index[(i, i)] = value
+        elif key[0] != key[1]:
+            i = variables_index[key[0]]
+            j = variables_index[key[1]]
+            if (j, i) in qubo_index and qubo_index[(j, i)] != value:
+                raise ValueError(
+                    'QUBO is not symmetric. (i, j) and (j, i) have different values')
+            if (j, i) in qubo_index:
+                logging.info(
+                    'Ignoring term (i, j) because (j, i) is already in qubo')
+            else:
+                qubo_index[(i, j)] = value
+    # Now, we can create the Hamiltonian in terms of pauli strings
+    num_qubits = len(variables_index)
+    paulis = {}
+    const = 0
+    for key, value in qubo_index.items():
+        if key[0] == key[1]:
+            i = key[0]
+            pauli = 'I'*(num_qubits-i-1) + linear_pauli + 'I'*i
+            if pauli in paulis:
+                paulis[pauli] += -2*value
+            else:
+                paulis[pauli] = -2*value
+            const += -2*value
+        elif key[0] != key[1]:
+            i = key[0]
+            j = key[1]
+            if i > j:
+                i, j = j, i
+            pauli = 'I'*(num_qubits-j-1) + 'Z' + \
+                'I'*(j-i-1) + 'Z' + 'I'*i
+            paulis[pauli] = value
+            pauli = 'I'*(num_qubits-i-1) + linear_pauli + 'I'*i
+            if pauli in paulis:
+                paulis[pauli] += -value
+            else:
+                paulis[pauli] = -value
+            pauli = 'I'*(num_qubits-j-1) + linear_pauli + 'I'*j
+            if pauli in paulis:
+                paulis[pauli] += -value
+            else:
+                paulis[pauli] = -value
+            const += -value
+    pauli_list = [(k, v) for k, v in paulis.items()]
+    #pauli_list = [(k, round(v/4,8)) for k, v in paulis.items()]
+    # external magnetic field in X direction
+    for i in range(num_qubits):
+        paulix = 'I'*i + 'X' + 'I'*(num_qubits-i-1)
+        pauli_list.append((paulix, external_field))
+        #pauli_list.append((paulix, external_field-0.2*count))
+    operator = PauliSumOp(SparsePauliOp.from_list(pauli_list))
+    offset = -const/4 # for future reference
+    print(f'Operator: \n{operator}')
+     
+    return operator, variables_index
 
 
 # STEP 2: SELECT THE OPTIMIZER AND RUN VQE
@@ -244,7 +372,7 @@ def plot_loudness(loudnesses):
 
     # Different color styles for Debugging, Dependent Origination and ISQCMC Paper
     #ax.set_prop_cycle(cycler('color', ['#a0dece', '#f7f7c1', '#f7f797', '#f5f56c', '#26c2d4', '#f883fc', '#baba2f', '#b4d4dc', '#96961b', '#bf1fc4', '#6b6b05', '#595900']))
-    ax.set_prop_cycle(cycler('color', COLORSCHEME['chordcolors']))
+#    ax.set_prop_cycle(cycler('color', COLORSCHEME['chordcolors']))
     #ax.set_prop_cycle(cycler('color', ['#a0dece', '#f7f7c1', '#f7f797', '#f5f56c', '#26c2d4', '#d6d649', '#baba2f', '#b4d4dc', '#96961b', '#80800d', '#6b6b05', '#595900']))
     #ax.set_prop_cycle(cycler('color', ['#93abbe', '#202a23', '#c4c9d5', '#425547', '#336068', '#577b7d', '#4e656f', '#b4d4dc']))
     
@@ -268,7 +396,7 @@ def plot_loudness(loudnesses):
 
 # STEP 6: HARMONIZE (TODO:NEEDS CLEANING)
 
-def harmonize(operators, **kwargs):
+def harmonize(qubos, **kwargs):
     '''Run harmonizer algorithm for list of qubos and list of iterations. VQE is performed for the i-th qubo for i-th number of iterations.'''
     global PATH
     QD = []
@@ -278,10 +406,11 @@ def harmonize(operators, **kwargs):
     operatorss = []
     # loop over qubos
     os.makedirs(PATH, exist_ok=True)
-    for count, operator in enumerate(operators):
+    for count, qubo in enumerate(qubos):
         print(f'Working on hamiltonian #{count}')
         
-        #logger.debug(f'operator: {operator}')
+        operator, variables_index = qubo_to_operator(qubo, count)
+        #logger.debOug(f'operator: {operator}')
         
         #Optimizer
         optimizer = return_optimizer(
@@ -295,19 +424,14 @@ def harmonize(operators, **kwargs):
         # Initial point
         if count == 0:
             initial_point = np.zeros(ansatz.num_parameters)
-            #initial_point[0] = -np.pi*1.5
-            #initial_point[0:12] = np.pi/2
-            #initial_point[4] = np.pi
-            #initial_point[7] = np.pi
-            #initial_point[12:24] = np.pi/2
-            #initial_point[24:36] = np.pi/2
-            #initial_point[36:48] = np.pi/2
             #initial_point = (np.pi/4)*np.ones(ansatz.num_parameters)
             print(initial_point)
         # copy ansatz to avoid VQE changing it
         ansatz_temp = copy.deepcopy(ansatz)
         #print(f'inital point: {initial_point}')
-        result, binary_probabilities, expectation_values = run_sampling_vqe(
+        vqe_experiment = SamplingVQE()
+        vqe_experiment.update_config()
+        result, binary_probabilities, expectation_values = vqe_experiment.run_vqe(
                 ansatz_temp, operator, optimizer, initial_point)
         valuess.extend(expectation_values)
         # Classical expectation value solution
@@ -371,7 +495,7 @@ def run_vqh_amplitude(sessionname): # Function called by the main script for exp
 
     PATH = f"{sessionname}_Data/Data_{config['nextpathid']}"
     # Read HAMILTONIANS from 'h_setup.csv'
-    operators = build_operators_from_csv(config["sequence_length"], config["size"])
+    operators = build_qubos_from_csv(config["sequence_length"], config["size"])
     # Obtain sonification parameters
     loudnesses, values, states = harmonize(operators , **config)
     loudness_list_of_dicts = loudnesses_to_list_of_dicts(loudnesses)
