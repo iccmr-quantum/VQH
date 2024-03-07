@@ -1,4 +1,3 @@
-
 # Logging and global variables
 import logging
 import sys
