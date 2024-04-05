@@ -2,7 +2,7 @@ from qiskit.algorithms.minimum_eigensolvers import VQE
 from qiskit.primitives import Estimator, Sampler
 from qiskit.circuit.library import EfficientSU2
 from qiskit_optimization import QuadraticProgram
-from qiskit.algorithms.optimizers import COBYLA, NFT, SPSA, TNC, SLSQP
+from qiskit.algorithms.optimizers import COBYLA, NFT, SPSA, TNC, SLSQP, ADAM
 from qiskit.algorithms.minimum_eigensolvers import NumPyMinimumEigensolver
 from qiskit.quantum_info import SparsePauliOp
 from qiskit.opflow.primitive_ops import PauliSumOp
@@ -42,8 +42,9 @@ global PATH
 # --------------------- Plotting colorschemes
 #color_mode = 'quadratic_debug'
 #color_mode = 'isqcmc'
+color_mode = 'isqcmc_adiabatic'
 #color_mode = 'isqcmc_cmajor'
-color_mode = 'isqcmc_iivvi'
+#color_mode = 'isqcmc_iivvi'
 global COLORSCHEME
 with open('protocols/plot_colors.json', 'r') as f:
     COLORSCHEME = json.load(f)[color_mode]
@@ -100,7 +101,7 @@ def H_Ising(N,J,hx):# Arianna Crippa's Ising model implementation for comparison
 
     return H_Ising
 
-def qubo_to_operator(qubo, count, linear_pauli='Z', external_field=+0):
+def qubo_to_operator(qubo, count, linear_pauli='Z', external_field=0):
     '''Translates qubo problems of format {(note_1, note_2): coupling, ...} to operators to be used in VQE.
     This function can yield non-diagonal Hamiltonians.
     
@@ -198,6 +199,8 @@ def return_optimizer(optimizer_name, maxiter):
         optimizer = NFT(maxiter=maxiter)
     elif optimizer_name == 'SLSQP':
         optimizer = SLSQP(maxiter=maxiter)
+    elif optimizer_name == 'ADAM':
+        optimizer = ADAM(maxiter=maxiter)
 
     return optimizer
 
@@ -371,7 +374,8 @@ def plot_loudness(loudnesses):
         plt.plot(loudnesses[k])
     plt.legend(list(loudnesses.keys()), facecolor=COLORSCHEME['legendfacecolor'], edgecolor=COLORSCHEME['legendedgecolor'], loc='lower center', bbox_to_anchor=(0.5, 0), ncols=6, fontsize=9)
     plt.xlabel('Iteration')
-    plt.ylabel('"Loudnesses"')
+    plt.ylabel('Marginal Distribution Coefficients')
+    #plt.ylabel('"Loudnesses"')
     print(plt.ylim())
 
     ylimit = plt.ylim()
@@ -380,7 +384,8 @@ def plot_loudness(loudnesses):
 
     
     #plt.title('Marginal Distribution Evolution')
-    plt.savefig(f"{PATH}/loudness_plot", dpi=300, bbox_inches='tight')
+    plt.savefig(f"{PATH}/loudness_plot.eps", dpi=2000, bbox_inches='tight', format='eps')
+    #plt.savefig(f"{PATH}/loudness_plot", dpi=300, bbox_inches='tight')
     plt.show()
     fig.clear()
 
