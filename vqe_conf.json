@@ -1,12 +1,12 @@
 {
     "reps": 1,
     "entanglement": "linear",
-    "optimizer_name": "COBYLA",
+    "optimizer_name": "SPSA",
     "sequence_length": 1,
-    "size": 8,
-    "description": "ISQCMC Matrices Transverse Field Phase Transition",
+    "size": 2,
+    "description": "CTM - Hexagonal Chambers",
     "iterations": [
-        64
+        416
     ],
-    "nextpathid": 3
+    "nextpathid": 16
 }

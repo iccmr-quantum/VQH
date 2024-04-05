@@ -9,16 +9,16 @@ class QuantumHardwareInterface(ABC):
         self.backend = None
 
     @abstractmethod
-    def execute(self, n):
+    def execute(self):
         pass
     @abstractmethod
-    def connect(self, n):
+    def connect(self):
         pass
     @abstractmethod
-    def get_backend(self, n):
+    def get_backend(self):
         pass
     @abstractmethod
-    def optimize(self, n):
+    def optimize(self):
         pass
 
 class VQHProtocol(ABC):
@@ -26,12 +26,16 @@ class VQHProtocol(ABC):
     @abstractmethod
     def __init__(self, n):
         self.name = None
+        self.data = None
 
     @abstractmethod
-    def encode(self, n): # midi to code
+    def encode(self): # midi to code
         pass
     @abstractmethod
-    def decode(self, n): # code to midi
+    def decode(self): # code to midi
+        pass
+    @abstractmethod
+    def run(self):
         pass
 
 class SonificationInterface(ABC):
@@ -39,11 +43,14 @@ class SonificationInterface(ABC):
     def __init__(self, n):
         self.platform = None
 
-    @abstractmethod
-    async def map_data(self, newnotes):
-        pass
+#    @abstractmethod
+#    async def map_data(self):
+#        pass
+    def map_data(self, method, data, **kwargs):
+        getattr(self, method)(data, **kwargs)
+        
 
-    @abstractmethod
-    async def play(self, newnotes):
-        pass
+#    @abstractmethod
+#    async def play(self):
+#        pass
 

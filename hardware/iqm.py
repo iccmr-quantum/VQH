@@ -4,8 +4,8 @@ from iqm.qiskit_iqm import IQMProvider
 from qiskit import execute
 #from qiskit_ibm_provider import IBMProvider
 
-server_url = ''
-real_server_url = ''
+server_url = 'https://demo.qc.iqm.fi/cocos'
+real_server_url = 'https://5a.qc.iqm.fi/cocos'
 
 class IQMHardwareInterface(QuantumHardwareInterface):
     def __init__(self):
