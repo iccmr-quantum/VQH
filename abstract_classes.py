@@ -38,6 +38,22 @@ class VQHProtocol(ABC):
     def run(self):
         pass
 
+class VQHOperator(ABC):
+
+    @abstractmethod
+    def __init__(self):
+        self.type = None
+    
+    @abstractmethod
+    def load_from_file(self, filename):
+        pass
+
+    @abstractmethod
+    def build_operator(self, **kwargs):
+        pass
+
+
+
 class SonificationInterface(ABC):
     
     def __init__(self, n):

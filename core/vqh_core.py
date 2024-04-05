@@ -30,6 +30,26 @@ logger = logging.getLogger(__name__)
 logger.setLevel(level)
 logger.addHandler(handler)
 
+# ============================ VQH PROCESS CLASS ===============================
+
+
+class VQHProcess:
+
+    def __init__(self, protocol_name, rt_mode=False):
+
+        self.protocol_library = ProtocolLibrary()
+
+#        self.operator_library = OperatorLibrary()
+
+        self.protocol = self.protocol_library.get_protocol(protocol_name)
+        config.PROTOCOL = self.protocol
+        print(f'Encoding/Decoding protocol: {self.protocol}')
+
+        self.rt_mode = rt_mode
+
+
+# ============================= VQH CORE CLASS =================================
+
 class VQH:
 
     def __init__(self, protocol_name, hwi_name, soni_name=None):
