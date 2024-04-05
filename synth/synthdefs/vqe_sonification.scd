@@ -6,7 +6,7 @@ SynthDef(\vqe_model1_son1, {|out, freq=#[261.6255653006, 277.18263097687, 293.66
 
 	// Percussive envelope == Percussive attack sound
 	/*env = EnvGen.ar(Env.perc(0.05, 1, 0.2), doneAction:0);*/
-	env = EnvGen.ar(Env.new([0, 0.1], 1), doneAction:0);
+	env = EnvGen.ar(Env.new([0, 0.1], 1), doneAction:0);S
 
 
 	//snd = Resonz.ar(WhiteNoise.ar(0.2), freqs, 0.02, amps);
@@ -144,7 +144,7 @@ SynthDef(\vqe_son3, {|out, freq=#[3206.0, 1029.6, 1620.0, 2322.0, 2699, 7113.0, 
 	env = EnvGen.ar(Env.new([0, 0.1], 1), doneAction:0);
 
 
-	snd = DynKlank.ar(`[freq - Lag.kr((10*shift), 0.3), Lag.kr([amp1, amp2, amp3, amp4, amp5, amp6, amp7, amp8, amp9, amp10, amp11, amp12], 0.6), [0.5]], BrownNoise.ar(0.1));
+	snd = DynKlank.ar(`[freq - Lag.kr((20*shift), 0.3), Lag.kr([amp1, amp2, amp3, amp4, amp5, amp6, amp7, amp8, amp9, amp10, amp11, amp12], 0.6), [0.5]], BrownNoise.ar(0.1));
 	//snd = DynKlank.ar(`[freq, [amp1, amp2, amp3, amp4, amp5, amp6, amp7, amp8, amp9, amp10, amp11, amp12], [1]], BrownNoise.ar(0.1));
 	//snd = SinOsc.ar(freq, mul: [amp1, amp2, amp3, amp4, amp5, amp6, amp7, amp8, amp9, amp10, amp11, amp12]);
 

@@ -36,7 +36,7 @@ class SuperColliderMapping(SonificationInterface):
             print(state)
             for k, amp in state.items():
                 synth.set(NOTESDICT[k], amp)
-            time.sleep(0.03)
+            time.sleep(0.05)
 # Mapping #2 - Simple additive synthesis - 8 qubits
     def note_loudness_multiple_8_qubits(self, data, **kwargs):
         global EXAMPLE 
@@ -90,7 +90,7 @@ class SuperColliderMapping(SonificationInterface):
 
 # Mapping #3 - Pitchshifted Arpeggios instead of chords. Philip Glass vibes.
     def note_cluster_intensity(self, data, **kwargs):
-        global FREQDICTL
+        global FREQDICT
         loudnessstream = data[0]
         expect_values = data[1]
 
@@ -100,16 +100,33 @@ class SuperColliderMapping(SonificationInterface):
             print(sorted_state)
             print(f" expected value: {expect_values[v]}")
             print(f" shifted value: {(expect_values[v] - min(expect_values))/100}")
-            shifted_value = (expect_values[v] - min(expect_values))/100
+            shifted_value = (expect_values[v] - min(expect_values))/200
             for i, (k, amp) in enumerate(sorted_state.items()):
-                sy = Synth(self.server, "vqe_son2", {"note": FREQDICTL[k], "amp":amp})
+                sy = Synth(self.server, "vqe_son2", {"note": FREQDICT[k], "amp":amp})
                 # sy = Synth(server, "vqe_son2", {"note": FREQDICT[k]+expect_values[v]-3, "amp":amp})
-                time.sleep(0.005+shifted_value)
+                time.sleep(0.004+shifted_value)
             #time.sleep(0.2)
 
+    def note_loudness_multiple_rs(self, data, **kwargs):
+        global NOTESDICT
+        loudnessstream = data[0]
+        expect_values = data[1]
+
+        labels = ["amp1", "amp2", "amp3", "amp4", "amp5", "amp6", "amp7", "amp8", "amp9", "amp10", "amp11", "amp12"]
+        loudness = np.zeros(12)
+        args = dict(zip(labels,loudness))
+        synth = Synth(self.server, "vqe_son3", args)
+
+        for v, state in enumerate(loudnessstream):
+            print(state)
+            for k, amp in state.items():
+                synth.set(NOTESDICT[k], amp)
+            synth.set("shift", expect_values[v])
+            time.sleep(0.04)
 
 # Ctrl - . equivalent to kill sounds in SC
     def freeall(self):
+        self.server = Server()
         self.server._send_msg("/g_freeAll", 0)
 
 #    async def map_data(self):

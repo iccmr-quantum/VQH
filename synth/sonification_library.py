@@ -44,6 +44,11 @@ class SonificationLibrary():
                 "interface": "sc",
                 "mapping": "note_loudness_multiple_4_qubits"
             },
+            8: {
+                "description": "Subtractive synthesis with Pitchshift (dentist)",
+                "interface": "sc",
+                "mapping": "note_loudness_multiple_rs"
+            },
         }
     def get_mapping(self, son_type: int) -> SonificationInterface:
         """Returns: sonification interface class associated with name.
