@@ -85,9 +85,12 @@ SynthDef(\vqe_model1_4q, {|out, freq=#[261.6255653006, 293.66476791741, 329.6275
 }).store;
 
 )
-
+60.midicps
+64.midicps
+67.midicps
+71.midicps
 (
-SynthDef(\vqh_rt_4q, {|out, freq=#[261.6255653006, 293.66476791741, 329.62755691287, 391.99543598175], amp1=0.1, amp2=0.1, amp3=0.1, amp4=0.1, gain=0.5| var env, snd;
+SynthDef(\vqh_rt_4q, {|out, freq=#[261.6255653006, 329.62755691287, 391.99543598175, 493.88330125612], amp1=0.1, amp2=0.1, amp3=0.1, amp4=0.1, gain=0.4| var env, snd;
 
 
 	// Percussive envelope == Percussive attack sound
