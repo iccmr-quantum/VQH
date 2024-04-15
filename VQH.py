@@ -189,10 +189,12 @@ Internal VQH functions:\n\
     vqh = VQH(args.protocol, args.platform)
 
     print('=====================================================')
-    print('      VQH: Variational Quantum Harmonizer  - v1.1    ') 
-    print('          by itaborala and schwaeti, 2023            ')
-    print('                             ICCMR + DESY            ') 
-    print('     https://github.com/iccmr-quantum/VQH            ')
+    print('      VQH: Variational Quantum Harmonizer  - v0.2    ') 
+    print('          by itaborala, schwaeti, maria-aguado,      ')
+    print('             maria-aguado and ariannacrippa          ')
+    print('                         2024                        ') 
+    print('                     DESY + ICCMR                    ')
+    print('         https://github.com/iccmr-quantum/VQH        ')
     print('=====================================================')
 
     # Run CLI

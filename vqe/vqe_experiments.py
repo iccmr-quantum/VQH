@@ -51,7 +51,7 @@ class SamplingVQE():
 
 
 
-    def run_vqe(self, ansatz, operator, optimizer, initial_point):
+    def run_vqe(self, ansatz, operator, optimizer, initial_point, callback=None):
         '''Runs VQE and samples the wavefunction at each iteration'''
 
 
@@ -73,6 +73,10 @@ class SamplingVQE():
             # for sonification
             binary_probabilities.append(sample_binary_probabilities)
             expectation_values.append(expectation_value)
+            # DECODE SAMPLE HERE?
+            if callback:
+                # Broadcast decoded sample
+                callback(binary_probabilities, expectation_values)
             return expectation_value
 
         print(f'Hardware Interface: {config.PLATFORM}')

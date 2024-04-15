@@ -39,13 +39,14 @@ class VQHProcess:
 
         self.protocol_library = ProtocolLibrary()
 
-#        self.operator_library = OperatorLibrary()
 
         self.protocol = self.protocol_library.get_protocol(protocol_name)
         config.PROTOCOL = self.protocol
         print(f'Encoding/Decoding protocol: {self.protocol}')
 
         self.rt_mode = rt_mode
+
+
 
 
 # ============================= VQH CORE CLASS =================================
@@ -55,7 +56,8 @@ class VQH:
     def __init__(self, protocol_name, hwi_name, soni_name=None):
         self.hardware_library = HardwareLibrary()
         self.protocol_library = ProtocolLibrary()
-        self.sonification_library = SonificationLibrary() # There will be a sonification library
+        self.sonification_library = SonificationLibrary()
+#        self.operator_library = OperatorLibrary()
         
         self.protocol = self.protocol_library.get_protocol(protocol_name)
         config.PROTOCOL = self.protocol
