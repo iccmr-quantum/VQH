@@ -21,6 +21,7 @@ import time
 import config
 
 from core.vqh_core import VQH
+from core.vqh_core_new import VQHCore
 
 # Event Management
 import json
@@ -50,7 +51,7 @@ last = False
 reset = True
 port = ''
 
-VALID_COMMANDS = ['play', 'runvqe', 'q', 'quit', 'stop', 'playfile', 'map', 'mapfile']
+VALID_COMMANDS = ['play', 'runvqe', 'q', 'quit', 'stop', 'playfile', 'map', 'mapfile', 'realtime', 'rt']
 
 
 # Play sonification from a previously generated file
@@ -67,7 +68,7 @@ def playfile(num, folder, son_type=1):
 def is_command(cmd):
     return cmd.split(' ')[0] in VALID_COMMANDS
     
-def CLI(vqh):
+def CLI(vqh, vqh_core):
     global progQuit, comp, last, reset, generated_quasi_dist, comp_events
     generated_quasi_dist = []
     
@@ -140,6 +141,11 @@ def CLI(vqh):
             #playfile(x[1], config.SESSIONPATH, son_type)
             vqh.mapfile(x[1], config.SESSIONPATH, son_type)
 
+
+        elif x[0] == 'realtime' or x[0] == 'rt':
+            print('')
+            vqh_core.start()
+
         else:
             print(f'Not a valid input - {x}')
 
@@ -179,6 +185,9 @@ Internal VQH functions:\n\
     p.add_argument('sessionpath', type=str, nargs='?', default='Session', help="Folder name where VQE data will be stored/read")
     p.add_argument('platform', type=str, nargs='?', default='local', help="Quantum Platform provider used (Local, IQM, IBMQ). Default is 'local'.")
     p.add_argument('protocol', type=str, nargs='?', default='harp', help="Encoding strategy for generating sonification data. Default is 'harp'.")
+    p.add_argument('process', type=str, nargs='?', default='test', help="Process to be sonified. Default is 'test'.")
+    p.add_argument('process_mode', type=str, nargs='?', default='fixed', help="Process mode. Default is 'fixed'.")
+    p.add_argument('rt_son', type=int, nargs='?', default=9, help="Real-time sonification method. Default is 9.")
     args = p.parse_args()
     logger.debug(args)
 
@@ -187,15 +196,18 @@ Internal VQH functions:\n\
     config.HW_INTERFACE = args.platform
 
     vqh = VQH(args.protocol, args.platform)
+    vqh_core = VQHCore('process', args.process, args.platform, args.rt_son, args.process_mode)
+
 
     print('=====================================================')
-    print('      VQH: Variational Quantum Harmonizer  - v0.2    ') 
+    print('      VQH: Variational Quantum Harmonizer  - v0.3    ') 
     print('          by itaborala, schwaeti, maria-aguado,      ')
-    print('             maria-aguado and ariannacrippa          ')
-    print('                         2024                        ') 
+    print('               maria-aguado, ariannacrippa           ')
+    print('                     2023 - 2024                     ') 
     print('                     DESY + ICCMR                    ')
+    print('              karljansen  + iccmr-quantum            ')
     print('         https://github.com/iccmr-quantum/VQH        ')
     print('=====================================================')
 
     # Run CLI
-    CLI(vqh)
+    CLI(vqh, vqh_core)

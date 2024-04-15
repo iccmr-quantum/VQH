@@ -86,6 +86,28 @@ SynthDef(\vqe_model1_4q, {|out, freq=#[261.6255653006, 293.66476791741, 329.6275
 
 )
 
+(
+SynthDef(\vqh_rt_4q, {|out, freq=#[261.6255653006, 293.66476791741, 329.62755691287, 391.99543598175], amp1=0.1, amp2=0.1, amp3=0.1, amp4=0.1, gain=0.5| var env, snd;
+
+
+	// Percussive envelope == Percussive attack sound
+	/*env = EnvGen.ar(Env.perc(0.05, 1, 0.2), doneAction:0);*/
+	env = EnvGen.ar(Env.new([0, 0.1], 1), doneAction:0);
+
+
+	//snd = Resonz.ar(WhiteNoise.ar(0.2), freqs, 0.02, amps);
+	snd = SinOsc.ar(freq, mul: [amp1, amp2, amp3, amp4]);
+
+	snd = snd*env;
+
+	snd=snd*gain;
+
+	// Output
+	Out.ar(out, (snd)!2)
+}).store;
+
+)
+
 
 SynthDescLib.global[\vqe_model1_son1]
 )

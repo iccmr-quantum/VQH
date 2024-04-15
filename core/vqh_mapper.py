@@ -3,6 +3,7 @@ from time import sleep
 from threading import Thread, Lock
 from queue import Queue, Empty
 import numpy as np
+from supercollider import Synth
 
 class VQHMappingStrategy(Protocol):
 
@@ -12,14 +13,18 @@ class VQHMappingStrategy(Protocol):
 
 class VQHMapper:
 
-    def __init__(self, strategy: VQHMappingStrategy, queue: Queue, clock_speed: int=2, timeout: int=3) -> None:
-        self.queue = queue
+    def __init__(self, strategy, synthesizer, queues, clock_speed: int=2, timeout: int=1) -> None:
+        self.queue = queues[0]
         self.thread = Thread(target=self.run_mapper)
         self.clock_speed = clock_speed
         self.clock_lock = Lock()
         self.strategy = strategy
+        self.synthesizer = synthesizer
         self.timeout = timeout
         self.is_done = False
+        self.queue2 = queues[1]
+
+        
 
     def start_mapper(self) -> None:
         self.thread.start()
@@ -31,6 +36,7 @@ class VQHMapper:
                 iteration = self.queue.get(timeout=self.timeout)
             except Empty:
                 print("Waiting for data...")
+                self.queue2.put(1)
                 continue
 
             if iteration is None:
@@ -38,7 +44,7 @@ class VQHMapper:
                 self.is_done = True
                 break
            
-            self.strategy.map(iteration)
+            self.synthesizer.map_data(self.strategy, iteration)
             
             with self.clock_lock:
                 sleep(self.clock_speed)
@@ -46,8 +52,9 @@ class VQHMapper:
     def update_clock_speed(self, speed: int) -> None:
         with self.clock_lock:
             self.clock_speed = speed
-        print(f"Clock speed updated to {speed}")
+        #print(f"Clock speed updated to {speed}")
 
     def stop(self) -> None:
         self.thread.join()
+        self.synthesizer.freeall()
         print("Mapper finished")

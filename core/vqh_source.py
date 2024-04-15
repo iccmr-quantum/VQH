@@ -24,7 +24,7 @@ class VQHProblem(Protocol):
 
     def evaluate(self, x: np.ndarray) -> float:
         ...
-    def load_data(self, filename: str) -> None:
+    def load_data(self, filename: str) -> Any:
         ...
 
 class VQHProtocol(Protocol):
@@ -37,6 +37,7 @@ class VQHProcess(VQHSourceStrategy, Protocol):
     #cost_fn: Callable[[np.ndarray], float]
     problem: VQHProblem
     protocol: VQHProtocol
+    rt_mode: int
 
 
 class VQHSource:
@@ -49,15 +50,16 @@ class VQHSource:
 
     def start_source(self) -> None:
         self.thread.start()
-        print("Thread started")
+        print("Source started")
 
 
     def iteration_handler(self, iteration: tuple[np.ndarray,...]) -> None:
+        #print(f"Received iteration {iteration}")
         self.queue.put(iteration)
 
     def stop(self) -> None:
         self.thread.join()
-        print("Thread finished")
+        print("Source finished")
 
 
     def run_strategy(self) -> None:

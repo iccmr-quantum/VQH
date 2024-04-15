@@ -23,7 +23,7 @@ class ProtocolTest:
         return problem.data + 1
 
     def decode(self, iteration):
-        return iteration + 100
+        return iteration + -1 
 
 class ProcessTest:
     def __init__(self, problem, protocol):
@@ -39,7 +39,10 @@ class ProcessTest:
             sleep(0.1 + random())
             iteration = (np.random.random(12), random())
             observable = (self.protocol.decode(iteration[0]), iteration[1])
-            print(observable)
+            if i == 0:
+                print(f'................................................Source: ({i}/{len(algo)-1})', end="\r")
+            else:
+                print(f'.......................................................Source: ({i}/{len(algo)-1})', end="\r")
             iteration_handler(observable)
 
 class MappingTest:

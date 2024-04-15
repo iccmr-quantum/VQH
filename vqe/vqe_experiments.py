@@ -76,7 +76,7 @@ class SamplingVQE():
             # DECODE SAMPLE HERE?
             if callback:
                 # Broadcast decoded sample
-                callback(binary_probabilities, expectation_values)
+                callback[0](sample_binary_probabilities, expectation_value, callback[1])
             return expectation_value
 
         print(f'Hardware Interface: {config.PLATFORM}')

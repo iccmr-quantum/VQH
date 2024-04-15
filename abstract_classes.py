@@ -38,10 +38,6 @@ class VQHProtocol(ABC):
     def run(self):
         pass
 
-class NewVQHProtocol(Protocol):
-
-    def decode(self): # sample to sonification data
-        ...
 
 class VQHOperator(ABC):
 

@@ -33,7 +33,7 @@ logger.addHandler(handler)
 # ============================ VQH PROCESS CLASS ===============================
 
 
-class VQHProcess:
+class VQHProcessOld:
 
     def __init__(self, protocol_name, rt_mode=False):
 

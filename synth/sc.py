@@ -16,11 +16,14 @@ global EXAMPLE6
 EXAMPLE6 = {"s0":"amp1", "s1":"amp2", "s2":"amp3", "s3":"amp4", "s4":"amp5", "s5":"amp6"}
 global EXAMPLE4
 EXAMPLE4 = {"00":"amp1", "01":"amp2", "10":"amp3", "11":"amp4"}
+global EXAMPLERT
+EXAMPLERT = {"c":"amp1", "e":"amp2", "g":"amp3", "b":"amp4"}
 
 class SuperColliderMapping(SonificationInterface):
     def __init__(self):
         self.server = Server()
         notesd = {"c":"amp1", "c#":"amp2", "d":"amp3", "d#":"amp4", "e":"amp5", "f":"amp6", "f#":"amp7", "g":"amp8", "g#":"amp9", "a":"amp10", "a#":"amp11", "b":"amp12", "new":"amp13"}
+        self.rt_synth = None
 
 # Mapping #1 - Simple additive synthesis - 12 qubits
     def note_loudness_multiple(self, data, **kwargs):
@@ -123,6 +126,30 @@ class SuperColliderMapping(SonificationInterface):
                 synth.set(NOTESDICT[k], amp)
             synth.set("shift", expect_values[v])
             time.sleep(0.04)
+
+# Mapping #9 - REALTIME
+    def note_loudness_multiple_rt(self, data, **kwargs):
+        global EXAMPLERT 
+        loudnesses = data[0]
+
+
+        labels = ["amp1", "amp2", "amp3", "amp4"]
+
+        if not self.rt_synth:
+
+            silence = np.zeros(4)
+            args = dict(zip(labels,silence))
+            self.rt_synth = Synth(self.server, "vqh_rt_4q", args)
+
+        state = dict(zip(labels, loudnesses))
+        state = loudnesses[0]
+        #print(state, end="\r")
+        #print(state)
+        print(f"Mapper: (", end="")
+        for k, amp in state.items():
+            self.rt_synth.set(EXAMPLERT[k], amp)
+            print(f"{k}:{amp:.1f},", end="")
+        print(")", end="\r")
 
 # Ctrl - . equivalent to kill sounds in SC
     def freeall(self):
