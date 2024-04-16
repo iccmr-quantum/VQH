@@ -2,6 +2,7 @@ from qiskit.quantum_info import SparsePauliOp
 from qiskit.opflow.primitive_ops import PauliSumOp
 from qiskit.opflow import I, X, Z, Y
 import numpy as np
+from threading import Lock
 
 class BasisProtocol:
     
@@ -126,7 +127,10 @@ class BasisProtocol:
 
     def encode(self, problem):
 
-        operator, variables_index = self.qubo_to_operator(problem.qubos[0])
+        with Lock():
+            qubo = problem.qubos[0]
+
+        operator, variables_index = self.qubo_to_operator(qubo)
 
         return operator, variables_index
 

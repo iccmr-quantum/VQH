@@ -13,17 +13,27 @@ class VQHMappingStrategy(Protocol):
 
 class VQHMapper:
 
-    def __init__(self, strategy, synthesizer, queues, clock_speed: int=2, timeout: int=1) -> None:
-        self.queue = queues[0]
+    def __init__(self, strategy, synthesizer, queue, clock_speed: int=2, timeout: int=1) -> None:
+        self.queue = queue
         self.thread = Thread(target=self.run_mapper)
-        self.clock_speed = clock_speed
         self.clock_lock = Lock()
         self.strategy = strategy
         self.synthesizer = synthesizer
         self.timeout = timeout
         self.is_done = False
-        self.queue2 = queues[1]
 
+        self._clock_speed = clock_speed
+
+    @property
+    def clock_speed(self) -> int:
+        with self.clock_lock:
+            return self._clock_speed
+
+    @clock_speed.setter
+    def clock_speed(self, speed: int) -> None:
+        with self.clock_lock:
+            self._clock_speed = speed
+            print(f"Clock speed updated to {speed}")
         
 
     def start_mapper(self) -> None:
@@ -36,7 +46,6 @@ class VQHMapper:
                 iteration = self.queue.get(timeout=self.timeout)
             except Empty:
                 print("Waiting for data...")
-                self.queue2.put(1)
                 continue
 
             if iteration is None:
@@ -46,8 +55,7 @@ class VQHMapper:
            
             self.synthesizer.map_data(self.strategy, iteration)
             
-            with self.clock_lock:
-                sleep(self.clock_speed)
+            sleep(self.clock_speed)
 
     def update_clock_speed(self, speed: int) -> None:
         with self.clock_lock:

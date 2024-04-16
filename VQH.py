@@ -21,7 +21,7 @@ import time
 import config
 
 from core.vqh_core import VQH
-from core.vqh_core_new import VQHCore
+from core.vqh_core_new import VQHCore, VQHController
 
 # Event Management
 import json
@@ -68,7 +68,7 @@ def playfile(num, folder, son_type=1):
 def is_command(cmd):
     return cmd.split(' ')[0] in VALID_COMMANDS
     
-def CLI(vqh, vqh_core):
+def CLI(vqh, vqh_core, vqh_controller):
     global progQuit, comp, last, reset, generated_quasi_dist, comp_events
     generated_quasi_dist = []
     
@@ -144,7 +144,7 @@ def CLI(vqh, vqh_core):
 
         elif x[0] == 'realtime' or x[0] == 'rt':
             print('')
-            vqh_core.start()
+            vqh_controller.start()
 
         else:
             print(f'Not a valid input - {x}')
@@ -197,6 +197,7 @@ Internal VQH functions:\n\
 
     vqh = VQH(args.protocol, args.platform)
     vqh_core = VQHCore('process', args.process, args.platform, args.rt_son, args.process_mode)
+    vqh_controlller = VQHController(vqh_core)
 
 
     print('=====================================================')
@@ -210,4 +211,4 @@ Internal VQH functions:\n\
     print('=====================================================')
 
     # Run CLI
-    CLI(vqh, vqh_core)
+    CLI(vqh, vqh_core, vqh_controlller)

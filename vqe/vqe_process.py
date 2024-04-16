@@ -8,15 +8,30 @@ from vqe.vqe_experiments import SamplingVQE
 from qiskit.circuit.library import EfficientSU2
 from qiskit.algorithms.optimizers import COBYLA, NFT, SPSA, TNC, SLSQP, ADAM
 
+from threading import Lock
+
 class VQEProcess:
-    def __init__(self, problem, protocol, real_time=0, queue2=None):
+    def __init__(self, problem, protocol, real_time=0, problem_event=None):
 
         self.problem = problem
         self.protocol = protocol
         self.variables_index = None
         self.handler = None
         self.rt_mode = real_time
-        self.queue2 = queue2
+        self.problem_event = problem_event
+        self.lock = Lock()
+
+        self._active = True
+
+    @property
+    def active(self):
+        with self.lock:
+            return self._active
+
+    @active.setter
+    def active(self, value):
+        with self.lock:
+            self._active = value
 
 
 
@@ -92,21 +107,15 @@ class VQEProcess:
 
         self.handler = iteration_handler
         # loop over qubos
-        for count in range(3):
+        count = 0
+        while self.active:
             
-            print(f'Working on qubo #{count}')
+            print(f'Next Segment: #{count}')
 
             # Load latest config file
             with open("vqe_conf.json") as cfile:
                 kwargs = json.load(cfile)
             
-            if count == 0:
-                qubo = self.problem.qubos[0]
-            else:
-                print('Loading data')
-                qubo = self.problem.load_data()
-                #qubo = self.problem.qubos[0]
-            # Qubo to Hamiltonian
             operator, self.variables_index = self.protocol.encode(self.problem)
             
             #Optimizer
@@ -126,8 +135,11 @@ class VQEProcess:
 
             # Set initital point for next qubo to be the optimal point of the previous qubo
             initial_point = result.x
-            print('Waiting for Mapper to finish')
-            self.queue2.get()
+            print('Waiting for New Problem...')
+            self.problem_event.wait()
+            self.problem_event.clear()
+            
+            count += 1
 
 
     def run_realtime(self, iteration_handler):

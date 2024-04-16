@@ -1,14 +1,17 @@
 from core.vqh_source import VQHSource, VQHSourceStrategy, VQHFileReader, VQHProblem, VQHProtocol, VQHProcess
 from core.vqh_mapper import VQHMapper, VQHMappingStrategy
 from core.vqh_process_test import ProcessTest, ProblemTest, ProtocolTest, MappingTest
-from problem.qubo import QUBOProblem
+from problem.qubo import QUBOProblem, QUBOProblemRT
 from protocols.basis import BasisProtocol
 from vqe.vqe_process import VQEProcess
 from time import sleep
-from threading import Thread
+from threading import Thread, Event
 import numpy as np
 from queue import Queue
 import config
+
+import sys
+from util.inlets import VQHInlet, VQHOutlet
 
 
 # Quantum Hardware Connection
@@ -21,11 +24,12 @@ from synth.sonification_library import SonificationLibrary
 import json
 from csv import DictReader
 import os
-
+from control_to_setup2 import json_to_csv
 
 PROCESS_LIBRARY = {
         "test": (ProcessTest, ProblemTest, ProtocolTest),
         "qubo": (VQEProcess, QUBOProblem, BasisProtocol),
+        "qubort": (VQEProcess, QUBOProblemRT, BasisProtocol),
 }
 
 REALTIME_MODES = {
@@ -34,10 +38,10 @@ REALTIME_MODES = {
         'full': 2,
 }
 
-def init_vqh_process(name, filename, rt_mode, queue2) -> VQHProcess:
+def init_vqh_process(name, filename, rt_mode, problem_event) -> VQHProcess:
     
     process, problem, protocol = PROCESS_LIBRARY[name]
-    return process(problem(filename), protocol(), rt_mode, queue2)
+    return process(problem(filename), protocol(), rt_mode, problem_event)
 
 
 def init_vqh_file_reader(filename) -> VQHFileReader:
@@ -68,14 +72,11 @@ def wait_for_source_and_mapper(source: VQHSource, mapper: VQHMapper):
         if source_finished and mapper_finished:
             break
 
-
-
-
 class VQHCore:
 
     def __init__(self, strategy_type, strategy_name, hwi_name, son_type, rt_mode_name='fixed'):
         
-        self.queue2 = Queue()
+        self.problem_event = Event()
         self.strategy_type = strategy_type
         self.strategy_name = strategy_name
         self.rt_mode = REALTIME_MODES[rt_mode_name]
@@ -97,10 +98,6 @@ class VQHCore:
 
         self.mapper = self.init_mapper()
 
-        self.waiter = Thread(target=wait_for_source_and_mapper, args=(self.source, self.mapper))
-        
-
-        self.updater = Thread(target=self.update_realtime) 
 
 
     def init_strategy(self):
@@ -109,7 +106,7 @@ class VQHCore:
         if self.strategy_type == "file":
             return init_vqh_file_reader(self.strategy_name)
         elif self.strategy_type == "process":
-            return init_vqh_process(self.strategy_name, 'h_setup_rt.csv', self.rt_mode, self.queue2)
+            return init_vqh_process(self.strategy_name, 'h_setup_rt.csv', self.rt_mode, self.problem_event)
         
 
 
@@ -119,52 +116,75 @@ class VQHCore:
         print("Initializing mapper")
         synth, mapping = self.sonification_library.get_mapping(self.son_type)
 
-        return VQHMapper(mapping, synth, [self.source.queue, self.queue2], clock_speed=0.1)
+        return VQHMapper(mapping, synth, self.source.queue, clock_speed=0.1)
 
 
+
+
+class VQHController:
+
+    def __init__(self, core: VQHCore):
+
+        self.core = core
+        self.rt_mode = core.rt_mode
+
+        self.waiter = Thread(target=wait_for_source_and_mapper, args=(self.core.source, self.core.mapper))
+        
+
+        self.updater = Thread(target=self.update_realtime) 
+
+
+        self.outlet = VQHOutlet()
+
+        self.qubos_inlet = VQHInlet(self.core.source.strategy.problem, 'qubos')
+
+        self.clock_speed_inlet = VQHInlet(self.core.mapper, 'clock_speed')
+
+        self.outlet.connect(self.qubos_inlet)
+        self.outlet.connect(self.clock_speed_inlet)
+
+
+        self.current_state = {}
+        self.current_state["clock_speed"] = self.core.mapper.clock_speed
+
+
+        
     def update_realtime(self):
         print(f"Realtime mode: {self.rt_mode}")
         if self.rt_mode == 0:
+            print("No RT mode")
             return
         elif self.rt_mode == 1:
             while True:
                 with open("rt_conf.json", "r") as f:
                     rt_config = json.load(f)
-                self.mapper.update_clock_speed(rt_config["clock_speed"])
+                print(f"Updating {rt_config}")
+
+                if rt_config["clock_speed"] != self.core.mapper.clock_speed:
+                    self.outlet.bang({"clock_speed": rt_config["clock_speed"]})
+                    self.current_state["clock_speed"] = rt_config["clock_speed"]
                 if rt_config["end"]:
                     print("Ending UPDATER")
+                    #self.core.mapper.stop()
+                    self.core.mapper.synthesizer.freeall()
+                    sys.exit(0)
                     break
+                if rt_config["next_problem"]:
+                    json_to_csv('midi/qubo_control.json', 'h_setup_rt.csv')
+                    #sleep(0.05)
+                    self.outlet.bang({"qubos": "h_setup_rt.csv"})
+                    self.core.problem_event.set()
+                    rt_config["next_problem"] = False
+                    with open("rt_conf.json", "w") as f:
+                        json.dump(rt_config, f)
                 sleep(1)
 
 
     def start(self):
 
-        print("Starting VQHCore")
-        self.source.thread.start()
-        self.mapper.thread.start()
+        print("Starting VQHController")
+        self.core.source.thread.start()
+        self.core.mapper.thread.start()
         self.waiter.start()
         self.updater.start()
 
-
-
-
-
-
-"""
-if __name__ == '__main__':
-    process = init_vqh_process("test", "test.json")
-
-    source = VQHSource(process)
-
-    mapping_strategy = MappingTest()
-    mapper = VQHMapper(mapping_strategy, source.queue)
-
-    source.thread.start()
-    mapper.thread.start()
-    
-    Thread(target=wait_for_source_and_mapper, args=(source, mapper)).start()
-
-    sleep(5)
-    mapper.update_clock_speed(0.2)
-
-"""
