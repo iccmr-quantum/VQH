@@ -111,6 +111,26 @@ SynthDef(\vqh_rt_4q, {|out, freq=#[261.6255653006, 329.62755691287, 391.99543598
 
 )
 
+(
+SynthDef(\vqe_son2_rt, {|out, note=0, amp=0.1| var env, snd, freq;
+
+
+	env = EnvGen.ar(Env.perc(0.004, 0.31, 0.5), doneAction:Done.freeSelf);
+
+	freq = note.midicps;
+
+	snd = LFCub.ar([freq, 3.4*freq, 4.5*freq, 7.5*freq], mul: [amp, 0.4*amp, 0.1*amp, 0.08*amp]);
+
+
+	snd = snd*env;
+
+	snd=snd*0.5;
+
+	// Output
+	Out.ar(out, ((snd))!2)
+}).store;
+)
+
 
 SynthDescLib.global[\vqe_model1_son1]
 )

@@ -54,6 +54,11 @@ class SonificationLibrary():
                 "interface": "sc",
                 "mapping": "note_loudness_multiple_rt"
             },
+            10: {
+                "description": "RealTime Arpeggios",
+                "interface": "sc",
+                "mapping": "note_cluster_intensity_rt"
+            },
         }
     def get_mapping(self, son_type: int) -> SonificationInterface:
         """Returns: sonification interface class associated with name.

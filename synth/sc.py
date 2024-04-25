@@ -151,6 +151,28 @@ class SuperColliderMapping(SonificationInterface):
             print(f"{k}:{amp:.1f},", end="")
         print(")", end="\r")
 
+
+
+    def note_cluster_intensity_rt(self, data, **kwargs):
+        global FREQDICT
+        loudnessstream = data[0]
+        expect_values = data[1]
+
+        state = loudnessstream[0]
+        print(f"STATE: {state}")
+        sorted_state = dict(sorted(state.items(), key=lambda item: item[1]))
+        print(sorted_state)
+        print(f" expected value: {expect_values}")
+        #print(f" expected value: {expect_values}")
+        #print(f" shifted value: {(expect_values - min(expect_values))/100}")
+        print(f" shifted value: {(expect_values - (-32))/100}")
+        shifted_value = (expect_values - (-32))/400
+        for i, (k, amp) in enumerate(sorted_state.items()):
+            sy = Synth(self.server, "vqe_son2_rt", {"note": FREQDICT[k], "amp":amp})
+            # sy = Synth(server, "vqe_son2", {"note": FREQDICT[k]+expect_values[v]-3, "amp":amp})
+            time.sleep(0.004+shifted_value)
+        #time.sleep(0.2)
+
 # Ctrl - . equivalent to kill sounds in SC
     def freeall(self):
         self.server = Server()

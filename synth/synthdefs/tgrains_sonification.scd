@@ -37,7 +37,6 @@ s.scope(zoom:4)
 }).store;
 )
 
-
 (SynthDef(\vqgrains, {|out=0, s0=1, s1=1, s2=1, s3=1, rate=1|
     var trate, dur, clk, pos, pan, sig;
     //trate = MouseY.kr(8,120,1);
@@ -47,6 +46,23 @@ s.scope(zoom:4)
 	clk = Impulse.kr([s0*trate, s1*trate, s2*trate, s3*trate]);
     //pos = MouseX.kr(0,BufDur.kr(~viola)) + TRand.kr(0, 0.01, clk);
 	pos = [s0, s1, s2, s3]*BufDur.kr(~viola.bufnum);
+	pan = WhiteNoise.kr(0.6);
+	sig = TGrains.ar(4, clk, ~viola.bufnum, rate, pos, dur, pan, 0.3);
+	// sig = TGrains.ar(4, clk, ~viola.bufnum, 1, pos, dur, pan, 0.3);
+
+	Out.ar(out, sig);
+}).store;
+)
+
+(SynthDef(\vqgrains_rt, {|out=0, amp1=1, amp2=1, amp3=1, amp4=1, rate=1|
+    var trate, dur, clk, pos, pan, sig;
+    //trate = MouseY.kr(8,120,1);
+    trate = rate;
+	dur = 12 / trate;
+	// clk = Impulse.kr([trate, trate, trate, trate]);
+	clk = Impulse.kr([amp1*trate, amp2*trate, amp3*trate, amp4*trate]);
+    //pos = MouseX.kr(0,BufDur.kr(~viola)) + TRand.kr(0, 0.01, clk);
+	pos = [amp1, amp2, amp3, amp4]*BufDur.kr(~viola.bufnum);
 	pan = WhiteNoise.kr(0.6);
 	sig = TGrains.ar(4, clk, ~viola.bufnum, rate, pos, dur, pan, 0.3);
 	// sig = TGrains.ar(4, clk, ~viola.bufnum, 1, pos, dur, pan, 0.3);
