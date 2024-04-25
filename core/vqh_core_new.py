@@ -158,7 +158,7 @@ class VQHController:
             while True:
                 with open("rt_conf.json", "r") as f:
                     rt_config = json.load(f)
-                print(f"Updating {rt_config}")
+                #print(f"Updating {rt_config}")
 
                 if rt_config["clock_speed"] != self.core.mapper.clock_speed:
                     self.outlet.bang({"clock_speed": rt_config["clock_speed"]})
