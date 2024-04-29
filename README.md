@@ -10,7 +10,7 @@ You can find more information in our publication on the ISQCMC symposium:
 [Variational Quantum Harmonizer: Generating Chord Progressions and other Sonification Methods with the VQE Algorithm](https://doi.org/10.5281/zenodo.10206731)
 
 You can listen to music that has used the VQH in its artistic process:
-[Dependent Origination](https://www.youtube.com/playlist?list=PLZcA8yDT3f3YLiVGQOuWJrHmD7R1T4Tn-)
+[Dependent Origination (2023)](https://www.youtube.com/playlist?list=PLZcA8yDT3f3YLiVGQOuWJrHmD7R1T4Tn-) [Hexagonal Chambers (2023-24)](https://youtu.be/3FZZJFP96CQ?si=dYiKHtvZLthsXz4J&t=1580)
 
 
 ## Installation
