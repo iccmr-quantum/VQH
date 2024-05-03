@@ -1,3 +1,5 @@
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.11110039.svg)](https://doi.org/10.5281/zenodo.11110039)
+
 # VQH
 Variation Quantum Harmonizer - Sonification Methods for the VQE, or the VQE as a musical interface.
 
