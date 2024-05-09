@@ -117,24 +117,9 @@ Apart from `VQH.py`, there are _two_ other important files for the VQH workflow:
 
 ## Contributing
 
-To assist with potentioal contributions, here a list on nomenclatures and suggested guidelines.
+To assist with potentioal contributions, here a schematic of the software structure and main object hierarchies for the lates version.
 
 ### Code structure
 
-├── VQH  
-│   ├── VQH.py  				---> Main Script
-	
-	├── h_setup.csv 			---> QUBO Matrix Designing
-	
-	├── vqe_conf.json 			---> VQE Parameters
-│   │   
-	├── abstract_classes.py 	---> Meta classes for creating class hierarchies
-	
-	├── hardware 				---> Where the quantum providers are included
-		├── hardware_library.py ---> A subclass istantiator.
-		
-		├── local.py			---> Remaining `.py` files should contain/implement the subclasses according to the abstract class definition.
-│   ├── sd  
-│   │   ├── *.wav  
-│   ├── pads  
-│   │   ├── *.wav
+![VQH Software Structure](https://github.com/iccmr-quantum/VQH/assets/28213905/9a019a5c-7c76-4c5a-babe-7ebac7a162ce)
+
