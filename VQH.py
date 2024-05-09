@@ -203,7 +203,7 @@ Internal VQH functions:\n\
     print('=====================================================')
     print('      VQH: Variational Quantum Harmonizer  - v0.3    ') 
     print('          by itaborala, schwaeti, maria-aguado,      ')
-    print('               maria-aguado, ariannacrippa           ')
+    print('               cephasteom, ariannacrippa           ')
     print('                     2023 - 2024                     ') 
     print('                     DESY + ICCMR                    ')
     print('              karljansen  + iccmr-quantum            ')

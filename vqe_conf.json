@@ -6,11 +6,7 @@
     "size": 12,
     "description": "VQH Chapter",
     "iterations": [
-        64,
-        64,
-        128,
-        128,
-        512
+        200
     ],
-    "nextpathid": 52
+    "nextpathid": 68
 }
