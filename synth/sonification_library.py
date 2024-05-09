@@ -1,12 +1,14 @@
 from abstract_classes import SonificationInterface
 from synth.sc import SuperColliderMapping
 from synth.zen import ZenMapping
+from synth.osc import OSCMapping
 
 class SonificationLibrary():
     def __init__(self):
         self._interfaces = {
             "sc": SuperColliderMapping,
-            "zen": ZenMapping
+            "zen": ZenMapping,
+            "osc": OSCMapping
         }
         self._library = {
             1: {
@@ -58,6 +60,11 @@ class SonificationLibrary():
                 "description": "RealTime Arpeggios",
                 "interface": "sc",
                 "mapping": "note_cluster_intensity_rt"
+            },
+            11: {
+                "description": "Gereral RealTime OSC Mapping",
+                "interface": "osc",
+                "mapping": "publish_data"
             },
         }
     def get_mapping(self, son_type: int) -> SonificationInterface:
