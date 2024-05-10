@@ -34,7 +34,9 @@ import argparse
 from argparse import RawDescriptionHelpFormatter
 from prompt_toolkit import PromptSession
 from prompt_toolkit.validation import Validator
+import multiprocessing
 
+from control_to_setup2 import json_to_csv
 
 level = logging.DEBUG
 
@@ -68,6 +70,14 @@ def playfile(num, folder, son_type=1):
 def is_command(cmd):
     return cmd.split(' ')[0] in VALID_COMMANDS
     
+def update_qubo_visualization():
+    while True:
+        try:
+            json_to_csv('midi/qubo_control.json', 'output.csv')
+            time.sleep(0.1)
+        except Exception:
+            continue
+
 def CLI(vqh, vqh_core, vqh_controller):
     global progQuit, comp, last, reset, generated_quasi_dist, comp_events
     generated_quasi_dist = []
@@ -211,4 +221,7 @@ Internal VQH functions:\n\
     print('=====================================================')
 
     # Run CLI
+    qubo_vis = multiprocessing.Process(target=update_qubo_visualization)
+    qubo_vis.start()
+
     CLI(vqh, vqh_core, vqh_controlller)
