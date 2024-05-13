@@ -66,6 +66,11 @@ class SonificationLibrary():
                 "interface": "osc",
                 "mapping": "publish_data"
             },
+            12: {
+                "description": "Gerenal RealTime Additive Synthesis",
+                "interface": "sc",
+                "mapping": "note_loudness_rt"
+            },
         }
     def get_mapping(self, son_type: int) -> SonificationInterface:
         """Returns: sonification interface class associated with name.

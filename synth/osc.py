@@ -16,3 +16,6 @@ class OSCMapping(SonificationInterface):
 
     def update_client(self, ip:str, port:int):
         self.client = SimpleUDPClient(ip, port)
+
+    def free(self):
+        self.client.close()

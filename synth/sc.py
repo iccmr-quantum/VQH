@@ -19,6 +19,9 @@ EXAMPLE4 = {"00":"amp1", "01":"amp2", "10":"amp3", "11":"amp4"}
 global EXAMPLERT
 EXAMPLERT = {"c":"amp1", "e":"amp2", "g":"amp3", "b":"amp4"}
 
+
+
+
 class SuperColliderMapping(SonificationInterface):
     def __init__(self):
         self.server = Server()
@@ -151,6 +154,29 @@ class SuperColliderMapping(SonificationInterface):
             print(f"{k}:{amp:.1f},", end="")
         print(")", end="\r")
 
+    def note_loudness_rt(self, data, **kwargs):
+        global EXAMPLERT 
+        loudnesses = data[0]
+
+
+        nnotes = len(loudnesses[0])
+
+        if not self.rt_synth:
+
+            silence = np.zeros(nnotes)
+            self.rt_synth = []
+            for i in range(nnotes): 
+                self.rt_synth.append(Synth(self.server, "vqh_rt_add_sin", {"amp":0.0, "idx":i+60}))
+
+        state = loudnesses[0]
+        print(state)
+        print(f'Synth: {self.rt_synth}')
+        print(f"Mapper: (", end="")
+        for i, (k, amp) in enumerate(state.items()):
+            self.rt_synth[i].set("amp", amp)
+            print(f"{k}:{amp:.1f},", end="")
+        print(")", end="\r")
+
 
 
     def note_cluster_intensity_rt(self, data, **kwargs):
@@ -178,12 +204,13 @@ class SuperColliderMapping(SonificationInterface):
         self.server = Server()
         self.server._send_msg("/g_freeAll", 0)
 
-#    async def map_data(self):
-#        pass
+    def free(self):
 
-#    async def play(self):
-#        pass
+        if type(self.rt_synth) == list:
+            for synth in self.rt_synth:
+                synth.free()
+        else:
+            self.rt_synth.free()
 
-
-
+        self.rt_synth = None
 
