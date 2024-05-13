@@ -47,6 +47,7 @@ class VQHSource:
         self.sentinel = None
         self.is_done = False
         self.thread = Thread(target=self.run_strategy)
+        self.thread.daemon = True
 
     def start_source(self) -> None:
         self.thread.start()
@@ -58,7 +59,7 @@ class VQHSource:
         self.queue.put(iteration)
 
     def stop(self) -> None:
-        self.thread.join()
+        #self.thread.join()
         print("Source finished")
 
 

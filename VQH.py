@@ -35,6 +35,7 @@ from argparse import RawDescriptionHelpFormatter
 from prompt_toolkit import PromptSession
 from prompt_toolkit.validation import Validator
 import multiprocessing
+import threading
 
 from control_to_setup2 import json_to_csv
 
@@ -47,6 +48,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(level)
 logger.addHandler(handler)
 
+global progQuit
 progQuit = False
 comp = True
 last = False
@@ -70,13 +72,19 @@ def playfile(num, folder, son_type=1):
 def is_command(cmd):
     return cmd.split(' ')[0] in VALID_COMMANDS
     
-def update_qubo_visualization():
-    while True:
+def update_qubo_visualization(pquit):
+    while not pquit.value:
         try:
             json_to_csv('midi/qubo_control.json', 'output.csv')
             time.sleep(0.1)
         except Exception:
             continue
+
+# Function to print all currently running threads
+def list_active_threads():
+    for thread in threading.enumerate():
+        print(f"Thread Name: {thread.name}, Alive: {thread.is_alive()}")
+
 
 def CLI(vqh, vqh_core, vqh_controller):
     global progQuit, comp, last, reset, generated_quasi_dist, comp_events
@@ -88,76 +96,90 @@ def CLI(vqh, vqh_core, vqh_controller):
     validator = Validator.from_callable(is_command, error_message='This command does not exist. Check for mispellings.')
 
     while not progQuit:
+        try:
       
-        #CLI Commands
-        x = session.prompt(f' VQH=> ', validator=validator, validate_while_typing=False)
-        x = x.split(' ')
-        if x[0] == 'next' or x[0] == 'n':
-            print(f'Score Features not implemented yet for the VQH!')
+            #CLI Commands
+            x = session.prompt(f' VQH=> ', validator=validator, validate_while_typing=False)
+            x = x.split(' ')
+            if x[0] == 'next' or x[0] == 'n':
+                print(f'Score Features not implemented yet for the VQH!')
 
 
-        elif x[0] == 'quit' or x[0] == 'q':
-            progQuit=True
-            continue
+            elif x[0] == 'quit' or x[0] == 'q':
+                progQuit=True
+                continue
 
-        
-        # Main VQH Command
-        elif x[0] == 'runvqe':
-            if len(x) == 1:
-                print("running VQE")
-                #generated_quasi_dist, generated_values = vqh.run_vqh(globalsvqh.SESSIONPATH)
-                vqh.runvqe(config.SESSIONPATH)
-            else:
-                print('Error! Try Again')
-        
-        # Sonify From a previously generated VQE result in the session folder
-        elif x[0] == 'playfile':
-            son_type = 1
-            if len(x) == 3:
-                son_type = int(x[2])
-            #playfile(x[1], config.SESSIONPATH, son_type)
-            vqh.playfile(x[1], config.SESSIONPATH, son_type)
-        
-        # Same as using ctrl+. in SuperCollider
-        elif x[0] == 'stop':
-            #sc.freeall()
-            vqh.stop_sc_sound()
-        
-        # Sonify the last generated VQE result
-        elif x[0] == 'play':
-            if generated_quasi_dist != []:
+            
+            # Main VQH Command
+            elif x[0] == 'runvqe':
+                if len(x) == 1:
+                    print("running VQE")
+                    #generated_quasi_dist, generated_values = vqh.run_vqh(globalsvqh.SESSIONPATH)
+                    vqh.runvqe(config.SESSIONPATH)
+                else:
+                    print('Error! Try Again')
+            
+            # Sonify From a previously generated VQE result in the session folder
+            elif x[0] == 'playfile':
                 son_type = 1
-                if len(x) == 2:
-                    son_type = int(x[1])
-                #sc.sonify(generated_quasi_dist, generated_values, son_type)
-                vqh.play(son_type)
-            else:
-                print("Quasi Dists NOT generated!")
+                if len(x) == 3:
+                    son_type = int(x[2])
+                #playfile(x[1], config.SESSIONPATH, son_type)
+                vqh.playfile(x[1], config.SESSIONPATH, son_type)
+            
+            # Same as using ctrl+. in SuperCollider
+            elif x[0] == 'stop':
+                #sc.freeall()
+                vqh.stop_sc_sound()
+            
+            # Sonify the last generated VQE result
+            elif x[0] == 'play':
+                if generated_quasi_dist != []:
+                    son_type = 1
+                    if len(x) == 2:
+                        son_type = int(x[1])
+                    #sc.sonify(generated_quasi_dist, generated_values, son_type)
+                    vqh.play(son_type)
+                else:
+                    print("Quasi Dists NOT generated!")
 
-        elif x[0] == 'map':
-            if vqh.data:
+            elif x[0] == 'map':
+                if vqh.data:
+                    son_type = 1
+                    if len(x) == 2:
+                        son_type = int(x[1])
+                    #sc.sonify(generated_quasi_dist, generated_values, son_type)
+                    vqh.map_sonification(son_type)
+                    
+                else:
+                    print("Quasi Dists NOT generated!")
+            elif x[0] == 'mapfile':
                 son_type = 1
-                if len(x) == 2:
-                    son_type = int(x[1])
-                #sc.sonify(generated_quasi_dist, generated_values, son_type)
-                vqh.map_sonification(son_type)
-                
+                if len(x) == 3:
+                    son_type = int(x[2])
+                #playfile(x[1], config.SESSIONPATH, son_type)
+                vqh.mapfile(x[1], config.SESSIONPATH, son_type)
+
+
+            elif x[0] == 'realtime' or x[0] == 'rt':
+                print('')
+                vqh_controller.start()
+
             else:
-                print("Quasi Dists NOT generated!")
-        elif x[0] == 'mapfile':
-            son_type = 1
-            if len(x) == 3:
-                son_type = int(x[2])
-            #playfile(x[1], config.SESSIONPATH, son_type)
-            vqh.mapfile(x[1], config.SESSIONPATH, son_type)
+                print(f'Not a valid input - {x}')
 
+        except KeyboardInterrupt:
 
-        elif x[0] == 'realtime' or x[0] == 'rt':
-            print('')
-            vqh_controller.start()
-
-        else:
-            print(f'Not a valid input - {x}')
+            print('Keyboard Interrupt!')
+            try:
+                vqh_controller.clean()
+            except Exception:
+                pass
+            progQuit = True
+            print('Exiting VQH...')
+            time.sleep(1)
+            print('Goodbye!')
+            
 
 if __name__ == '__main__':
 
@@ -221,7 +243,11 @@ Internal VQH functions:\n\
     print('=====================================================')
 
     # Run CLI
-    qubo_vis = multiprocessing.Process(target=update_qubo_visualization)
+    pquit = multiprocessing.Value('b', False)
+    qubo_vis = multiprocessing.Process(target=update_qubo_visualization, args=(pquit,))
     qubo_vis.start()
 
     CLI(vqh, vqh_core, vqh_controlller)
+    pquit.value = True
+    print('Exited VQH')
+    #list_active_threads()

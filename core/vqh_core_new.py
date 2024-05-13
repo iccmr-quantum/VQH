@@ -68,8 +68,11 @@ def wait_for_source_and_mapper(source: VQHSource, mapper: VQHMapper):
         if mapper.is_done and not mapper_finished:
             mapper.stop()
             mapper_finished = True
+        #print(source.is_done, mapper.is_done)
+        #print(source_finished, mapper_finished)
 
         if source_finished and mapper_finished:
+            print("Ending Waiter Thread")
             break
 
 class VQHCore:
@@ -131,7 +134,9 @@ class VQHController:
         self.waiter = Thread(target=wait_for_source_and_mapper, args=(self.core.source, self.core.mapper))
         
 
-        self.updater = Thread(target=self.update_realtime) 
+        self.updater = Thread(target=self.update_realtime)
+
+        self.is_active = True
 
 
         self.outlet = VQHOutlet()
@@ -155,7 +160,7 @@ class VQHController:
             print("No RT mode")
             return
         elif self.rt_mode == 1:
-            while True:
+            while self.is_active:
                 with open("rt_conf.json", "r") as f:
                     rt_config = json.load(f)
                 #print(f"Updating {rt_config}")
@@ -183,8 +188,24 @@ class VQHController:
     def start(self):
 
         print("Starting VQHController")
-        self.core.source.thread.start()
+        self.is_active = True
+        #self.core.source.thread.start()
+        self.core.source.start_source()
         self.core.mapper.thread.start()
         self.waiter.start()
         self.updater.start()
+
+    def clean(self):
+        print("Cleaning VQHController")
+        
+        self.core.mapper.synthesizer.free()
+        self.core.source.is_done = True
+        self.core.mapper.is_done = True
+        sleep(1)
+        self.is_active = False
+        #self.waiter.join()
+        #self.updater.join()
+
+        
+
 

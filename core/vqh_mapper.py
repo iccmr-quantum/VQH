@@ -3,7 +3,6 @@ from time import sleep
 from threading import Thread, Lock
 from queue import Queue, Empty
 import numpy as np
-from supercollider import Synth
 
 class VQHMappingStrategy(Protocol):
 
