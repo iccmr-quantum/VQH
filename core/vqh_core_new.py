@@ -145,8 +145,11 @@ class VQHController:
 
         self.clock_speed_inlet = VQHInlet(self.core.mapper, 'clock_speed')
 
+        self.scale_inlet = VQHInlet(self.core.mapper.synthesizer.scale, 'current_scale')
+
         self.outlet.connect(self.qubos_inlet)
         self.outlet.connect(self.clock_speed_inlet)
+        self.outlet.connect(self.scale_inlet)
 
 
         self.current_state = {}
@@ -164,6 +167,10 @@ class VQHController:
                 with open("rt_conf.json", "r") as f:
                     rt_config = json.load(f)
                 #print(f"Updating {rt_config}")
+
+                if rt_config['scale'] != self.core.mapper.synthesizer.scale.current_scale:
+                    self.outlet.bang({"current_scale": rt_config['scale']})
+                    self.current_state["scale"] = rt_config['scale']
 
                 if rt_config["clock_speed"] != self.core.mapper.clock_speed:
                     self.outlet.bang({"clock_speed": rt_config["clock_speed"]})

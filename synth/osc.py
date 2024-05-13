@@ -7,6 +7,7 @@ import json
 class OSCMapping(SonificationInterface):
     def __init__(self, ip:str="127.0.0.1", port:int=1450) -> None:
         self.client = SimpleUDPClient(ip, port)
+        self.scale =None
 
     def publish_data(self, data, **kwargs):
         print(f'Publishing data: {data}')

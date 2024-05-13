@@ -113,7 +113,7 @@ SynthDef(\vqh_rt_4q, {|out, freq=#[261.6255653006, 329.62755691287, 391.99543598
 
 
 (
-SynthDef(\vqh_rt_add_sin, {|out, idx=0.0, amp=0.0, gain=0.4| var env, snd, freq;
+SynthDef(\vqh_rt_add_sin, {|out, idx=0.0, amp=0.0, gain=0.1| var env, snd, freq;
 
 
 	// Percussive envelope == Percussive attack sound

@@ -3,7 +3,7 @@ import asyncio
 import numpy as np
 from supercollider import Synth, Server, Group, AudioBus
 import time
-from dataclasses import dataclass
+# from threading import Lock
 
 global NOTESDICT
 NOTESDICT = {"c":"amp1", "c#":"amp2", "d":"amp3", "d#":"amp4", "e":"amp5", "f":"amp6", "f#":"amp7", "g":"amp8", "g#":"amp9", "a":"amp10", "a#":"amp11", "b":"amp12", "new":"amp13"}
@@ -22,17 +22,27 @@ EXAMPLERT = {"c":"amp1", "e":"amp2", "g":"amp3", "b":"amp4"}
 
 class MusicalScale:
     def __init__(self):
-        self.current_scale = None
         self.scales:dict = {
             "major": lambda x: [0, 2, 4, 5, 7, 9, 11][x % 7] + 60 + 12 * (x // 7),
             "minor": lambda x: [0, 2, 3, 5, 7, 8, 10][x % 7] + 60 + 12 * (x // 7),
             "pentatonic": lambda x: [0, 2, 4, 7, 9][x % 5] + 60 + 12 * (x // 5),
             "blues": lambda x: [0, 3, 5, 6, 7, 10][x % 6] + 60 + 12 * (x // 6),
-            "chromatic": lambda x: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11][x % 12] + 60 + 12 * (x // 12)
+            "chromatic": lambda x: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11][x % 12] + 60 + 12 * (x // 12),
+            "maj7chord": lambda x: [0, 4, 7, 11][x % 4] + 60 + 12 * (x // 4)
         }
 
-    def select_scale(self, scale):
-        self.current_scale = self.scales[scale]
+        self._current_scale = self.scales["chromatic"]
+
+    @property
+    def current_scale(self):
+        return self._current_scale
+
+    @current_scale.setter
+    def current_scale(self, scale_name):
+        self._current_scale = self.scales[scale_name]
+
+    #def select_scale(self, scale):
+    #    self.current_scale = self.scales[scale]
 
     def get_note(self, x):
         if self.current_scale:
@@ -48,7 +58,19 @@ class SuperColliderMapping(SonificationInterface):
         notesd = {"c":"amp1", "c#":"amp2", "d":"amp3", "d#":"amp4", "e":"amp5", "f":"amp6", "f#":"amp7", "g":"amp8", "g#":"amp9", "a":"amp10", "a#":"amp11", "b":"amp12", "new":"amp13"}
         self.rt_synth = None
         self.scale = MusicalScale()
-        self.scale.select_scale("minor")
+        self.notes = []
+        self._gain = 0.1
+        # self.lock = Lock()
+
+    @property
+    def gain(self):
+        # with self.lock:
+        return self._gain
+
+    @gain.setter
+    def gain(self, value):
+        # with self.lock:
+        self._gain = value
 
 # Mapping #1 - Simple additive synthesis - 12 qubits
     def note_loudness_multiple(self, data, **kwargs):
@@ -186,10 +208,12 @@ class SuperColliderMapping(SonificationInterface):
         if not self.rt_synth:
 
             silence = np.zeros(nnotes)
+            self.notes =[]
             self.rt_synth = []
             for i in range(nnotes): 
                 note = self.scale.get_note(i)
                 self.rt_synth.append(Synth(self.server, "vqh_rt_add_sin", {"amp":0.0, "idx":note}))
+                self.notes.append(note)
 
         state = loudnesses[0]
         print(state)
@@ -197,6 +221,12 @@ class SuperColliderMapping(SonificationInterface):
         print(f"Mapper: (", end="")
         for i, (k, amp) in enumerate(state.items()):
             self.rt_synth[i].set("amp", amp)
+            note = self.scale.get_note(i)
+            print(i, note)
+            print(self.notes[i])
+            if note != self.notes[i]:
+                self.rt_synth[i].set("idx", note)
+                self.notes[i] = note
             print(f"{k}:{amp:.1f},", end="")
         print(")", end="\r")
 
