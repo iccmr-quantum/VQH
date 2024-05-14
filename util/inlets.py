@@ -9,7 +9,7 @@ class VQHOutlet:
         with self.lock:
             for attribute, msg in message_dict.items():
                 if attribute in self.inlets:
-                    print(f"Updating attribute {attribute} in inlet {self.inlets[attribute].target_instance}")
+                    #print(f"Updating attribute {attribute} in inlet {self.inlets[attribute].target_instance}")
                     self.inlets[attribute].update(msg)
                 else:
                     print(f"Warning: no inlet for attribute {attribute}")
