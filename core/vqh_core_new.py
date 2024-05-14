@@ -4,6 +4,7 @@ from core.vqh_process_test import ProcessTest, ProblemTest, ProtocolTest, Mappin
 from problem.qubo import QUBOProblem, QUBOProblemRT
 from protocols.basis import BasisProtocol
 from vqe.vqe_process import VQEProcess
+from vqe.vqe_algorithm import VQEAlgorithm
 from time import sleep
 from threading import Thread, Event
 import numpy as np
@@ -27,9 +28,10 @@ import os
 from control_to_setup2 import json_to_csv
 
 PROCESS_LIBRARY = {
-        "test": (ProcessTest, ProblemTest, ProtocolTest),
-        "qubo": (VQEProcess, QUBOProblem, BasisProtocol),
-        "qubort": (VQEProcess, QUBOProblemRT, BasisProtocol),
+        "test": (ProcessTest, ProblemTest, ProtocolTest), #Deprecated
+        "qubo": (VQEProcess, QUBOProblem, BasisProtocol), #Deprecated
+        "qubort": (VQEProcess, QUBOProblemRT, BasisProtocol), #Deprecated
+        "qubo_algo": (VQHProcess, VQEAlgorithm, QUBOProblemRT, BasisProtocol)
 }
 
 REALTIME_MODES = {
@@ -40,8 +42,8 @@ REALTIME_MODES = {
 
 def init_vqh_process(name, filename, rt_mode, problem_event) -> VQHProcess:
     
-    process, problem, protocol = PROCESS_LIBRARY[name]
-    return process(problem(filename), protocol(), rt_mode, problem_event)
+    process, algorithm, problem, protocol = PROCESS_LIBRARY[name]
+    return process(problem(filename), algorithm(protocol()), rt_mode, problem_event)
 
 
 def init_vqh_file_reader(filename) -> VQHFileReader:
@@ -84,6 +86,7 @@ class VQHCore:
         self.strategy_name = strategy_name
         self.rt_mode = REALTIME_MODES[rt_mode_name]
         self.strategy = self.init_strategy()
+        print(f"Strategy: {self.strategy}")
 
         self.hardware_library = HardwareLibrary()
         self.sonification_library = SonificationLibrary()
@@ -109,6 +112,9 @@ class VQHCore:
         if self.strategy_type == "file":
             return init_vqh_file_reader(self.strategy_name)
         elif self.strategy_type == "process":
+            if self.strategy_name in ['test', 'qubo', 'qubort']:
+                print(f"This strategy '{self.strategy_name}' is deprecated. Use qubo_algo instead")
+                raise ValueError
             return init_vqh_process(self.strategy_name, 'h_setup_rt.csv', self.rt_mode, self.problem_event)
         
 
@@ -168,9 +174,13 @@ class VQHController:
                     rt_config = json.load(f)
                 #print(f"Updating {rt_config}")
 
-                if rt_config['scale'] != self.core.mapper.synthesizer.scale.current_scale:
-                    self.outlet.bang({"current_scale": rt_config['scale']})
-                    self.current_state["scale"] = rt_config['scale']
+                try:
+                    if rt_config['scale'] != self.core.mapper.synthesizer.scale.current_scale:
+                        self.outlet.bang({"current_scale": rt_config['scale']})
+                        self.current_state["scale"] = rt_config['scale']
+                except Exception as e:
+                    print('Synth not ready yet. skipping scale update')
+                    continue
 
                 if rt_config["clock_speed"] != self.core.mapper.clock_speed:
                     self.outlet.bang({"clock_speed": rt_config["clock_speed"]})

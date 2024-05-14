@@ -9,7 +9,7 @@ class QUBOProblem:
         self.load_data(filename)
 
 
-    def load_data(self, filename="h_setup_rt.csv"):
+    def load_data(self, filename="h_setup.csv"):
 
         '''Builds a list of qubos from a csv file. 
         The csv file must be in the same folder as this script and must be named 
@@ -57,6 +57,7 @@ class QUBOProblemRT:
         self._qubos = []
         self.lock = Lock()
         self.init_data()
+        self.size = 0
 
     @property
     def qubos(self):
@@ -106,6 +107,7 @@ class QUBOProblemRT:
             self._qubos = qubos_aux
 
         #return self.qubos[-1]
+        self.size = len(qubos_aux)
 
     @qubos.setter
     def qubos(self,value):
