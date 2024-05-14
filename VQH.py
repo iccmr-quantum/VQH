@@ -20,7 +20,7 @@ import time
 # Global variables
 import config
 
-from core.vqh_core import VQH
+from core.vqh_core_old import VQH
 from core.vqh_core_new import VQHCore, VQHController
 
 # Event Management
@@ -250,4 +250,4 @@ Internal VQH functions:\n\
     CLI(vqh, vqh_core, vqh_controlller)
     pquit.value = True
     print('Exited VQH')
-    #list_active_threads()
+    list_active_threads()
