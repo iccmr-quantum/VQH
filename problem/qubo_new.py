@@ -12,7 +12,7 @@ class QUBOProblem:
 
         self.load_data(filename)
 
-    def qubo_to_array(self, qubo):
+    def qubo_to_array(self, qubo: list) -> np.ndarray:
         """Converts a qubo in list format to a numpy array."""
         dim = len(qubo[-1])
         a = np.zeros((dim, dim))
@@ -37,7 +37,7 @@ class QUBOProblem:
 
         """Builds a list of qubos from a csv file.
         The csv file must be in the same folder as this script and must be named
-        "h_setup.csv". The csv file must have the following format:
+        "h_setup.csv". The csv file must have the follsowing format:
 
         # first qubo
         c_{0,0}
@@ -56,18 +56,21 @@ class QUBOProblem:
         where each np.array is a qubo matrix.
         """
 
-        with open("qubo_test.csv") as f:
+        with open(filename, 'r') as f:
             reader = csv.reader(f)
             qubo = [next(reader)]
             for row in reader:
                 if len(row) > len(qubo[-1]):
                     qubo.append(row)
                 else:
-                    self.qubos.append(qubo)
+                    self.qubos.append(self.qubo_to_array(qubo))
                     qubo = [row]
-            self.qubos.append(qubo)
+            self.qubos.append(self.qubo_to_array(qubo))
 
         return self.qubos[-1]
+    
+    def evaluate(self, qubo: np.ndarray, x: np.ndarray) -> float:
+        return np.dot(x, np.dot(qubo, x))
 
 
 class QUBOProblemRT:
@@ -83,7 +86,7 @@ class QUBOProblemRT:
         with self.lock:
             return self._qubos
 
-    def qubo_to_array(self, qubo):
+    def qubo_to_array(self, qubo: list) -> np.ndarray:
         """Converts a qubo in list format to a numpy array."""
         dim = len(qubo[-1])
         a = np.zeros((dim, dim))
@@ -128,16 +131,16 @@ class QUBOProblemRT:
         """
 
         qubos_aux = []
-        with open("qubo_test.csv") as f:
+        with open(filename, 'r') as f:
             reader = csv.reader(f)
             qubo = [next(reader)]
             for row in reader:
                 if len(row) > len(qubo[-1]):
                     qubo.append(row)
                 else:
-                    qubos_aux.append(qubo)
+                    qubos_aux.append(self.qubo_to_array(qubo))
                     qubo = [row]
-            qubos_aux.append(qubo)
+            qubos_aux.append(self.qubo_to_array(qubo))
 
         with self.lock:
             self._qubos = qubos_aux
@@ -154,3 +157,6 @@ class QUBOProblemRT:
 
     def init_data(self):
         self.qubos = "h_setup_rt.csv"
+
+    def evaluate(self, qubo: np.ndarray, x: np.ndarray) -> float:
+        return np.dot(x, np.dot(qubo, x))
