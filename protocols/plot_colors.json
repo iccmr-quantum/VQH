@@ -26,6 +26,15 @@
         "legendfacecolor": "#ffffff",
         "legendedgecolor": "white"
     },
+    "isqcmc_adiabatic": {
+        "background": "#ffffff",
+        "facecolor": "#ffffff",
+        "alpha": 1,
+        "chordcolors": ["#f07e71", "#5d98ee", "#498bec", "#f5f105", "#e83420", "#1766db", "#d3d119", "#b22313", "#104a9e", "#b0b02c", "#0c3776", "#8e9040"],
+        "valuecolor": "sandybrown",
+        "legendfacecolor": "#ffffff",
+        "legendedgecolor": "white"
+    },
     "isqcmc_iivvi": {
         "background": "#ffffff",
         "facecolor": "#ffffff",

@@ -1,12 +1,12 @@
 {
     "reps": 1,
     "entanglement": "linear",
-    "optimizer_name": "SPSA",
+    "optimizer_name": "COBYLA",
     "sequence_length": 1,
-    "size": 2,
-    "description": "CTM - Hexagonal Chambers",
+    "size": 12,
+    "description": "VQH Chapter",
     "iterations": [
-        416
+        200
     ],
-    "nextpathid": 16
+    "nextpathid": 68
 }

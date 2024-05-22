@@ -10,8 +10,6 @@
 #
 # Jan 2023 - Jan 2024
 #===========================================
-# VQE and Quantum Computing part
-from qiskit import IBMQ
 
 
 # Logging and global variables
@@ -22,14 +20,8 @@ import time
 # Global variables
 import config
 
-# Quantum Hardware Connection
-from hardware.hardware_library import HardwareLibrary
-
-# Encoders, Decoders, Models
-from protocols.protocol_library import ProtocolLibrary
-
-# SuperCollider, Sonification and Synthesis part
-from synth.sonification_library import SonificationLibrary
+from core.vqh_core_old import VQH
+from core.vqh_core_new import VQHCore, VQHController
 
 # Event Management
 import json
@@ -42,7 +34,10 @@ import argparse
 from argparse import RawDescriptionHelpFormatter
 from prompt_toolkit import PromptSession
 from prompt_toolkit.validation import Validator
+import multiprocessing
+import threading
 
+from control_to_setup2 import json_to_csv
 
 level = logging.DEBUG
 
@@ -53,13 +48,14 @@ logger = logging.getLogger(__name__)
 logger.setLevel(level)
 logger.addHandler(handler)
 
+global progQuit
 progQuit = False
 comp = True
 last = False
 reset = True
 port = ''
 
-VALID_COMMANDS = ['play', 'runvqe', 'q', 'quit', 'stop', 'playfile', 'map', 'mapfile']
+VALID_COMMANDS = ['play', 'runvqe', 'q', 'quit', 'stop', 'playfile', 'map', 'mapfile', 'realtime', 'rt']
 
 
 # Play sonification from a previously generated file
@@ -72,81 +68,25 @@ def playfile(num, folder, son_type=1):
     sc.sonify(dist, vals, son_type)
 
 
-class VQH:
-
-    def __init__(self, protocol_name, hwi_name, soni_name=None):
-        self.hardware_library = HardwareLibrary()
-        self.protocol_library = ProtocolLibrary()
-        self.sonification_library = SonificationLibrary() # There will be a sonification library
-        
-        self.protocol = self.protocol_library.get_protocol(protocol_name)
-        config.PROTOCOL = self.protocol
-        print(f'Encoding protocol: {self.protocol}')
-        
-        self.hardware_interface = self.hardware_library.get_hardware_interface(hwi_name)
-        self.hardware_interface.connect()
-        self.hardware_interface.get_backend()
-        config.PLATFORM = self.hardware_interface
-
-        #print(f'Connected to HWI: {self.hardware_interface}, {self.hardware_interface.provider}, {self.hardware_interface.backend}')
-        
-        self.session_name = None
-        self.synth = None
-
-        self.data = None
-
-    def runvqe(self, sessionname = "Default"):
-
-        self.session_name = sessionname
-        # The function below is the main function inside your protocol class
-        self.data = self.protocol.run(self.session_name)
-        self.datafile = None
-    
-    # Play sonification from a previously generated file
-    def playfile(num, folder, son_type=1):
-        path = f"{folder}/Data_{num}"
-        with open(f"{path}/aggregate_data.json") as afile:
-            dist = json.load(afile)
-        with open(f"{path}/exp_values.txt") as efile:
-            vals = [float(val.rstrip()) for val in efile]
-        sc.sonify(dist, vals, son_type)
-                
-    def play(self, son_type=1):
-        generated_quasi_dist, generated_values = self.data
-        sc.sonify(generated_quasi_dist, generated_values, son_type)
-
-    def mapfile(self, num, folder, son_type=1, **kwargs):
-        path = f"{folder}_Data/Data_{num}"
-        with open(f"{path}/aggregate_data.json") as afile:
-            dist = json.load(afile)
-
-        with open(f"{path}/exp_values.txt") as efile:
-            vals = [float(val.rstrip()) for val in efile]
-
-        states = []
-        with open(f"{path}/max_prob_states.txt", 'r') as file:
-            for line in file:
-                #state_list = [int(char) for char in line.strip()]
-                #states.append(state_list)
-                states.append(line.rstrip())
-
-        self.datafile = (dist, vals, states)
-        self.synth, method = self.sonification_library.get_mapping(son_type)
-        self.synth.map_data(method, self.datafile, **kwargs)
-
-
-    def map_sonification(self, son_type=1, **kwargs):
-        self.synth, method = self.sonification_library.get_mapping(son_type)
-        self.synth.map_data(method, self.data, **kwargs)
-
-    def stop_sc_sound(self):
-        self.synth.freeall()
-
 
 def is_command(cmd):
     return cmd.split(' ')[0] in VALID_COMMANDS
     
-def CLI(vqh):
+def update_qubo_visualization(pquit):
+    while not pquit.value:
+        try:
+            json_to_csv('midi/qubo_control.json', 'output.csv')
+            time.sleep(0.1)
+        except Exception:
+            continue
+
+# Function to print all currently running threads
+def list_active_threads():
+    for thread in threading.enumerate():
+        print(f"Thread Name: {thread.name}, Alive: {thread.is_alive()}")
+
+
+def CLI(vqh, vqh_core, vqh_controller):
     global progQuit, comp, last, reset, generated_quasi_dist, comp_events
     generated_quasi_dist = []
     
@@ -156,71 +96,90 @@ def CLI(vqh):
     validator = Validator.from_callable(is_command, error_message='This command does not exist. Check for mispellings.')
 
     while not progQuit:
+        try:
       
-        #CLI Commands
-        x = session.prompt(f' VQH=> ', validator=validator, validate_while_typing=False)
-        x = x.split(' ')
-        if x[0] == 'next' or x[0] == 'n':
-            print(f'Score Features not implemented yet for the VQH!')
+            #CLI Commands
+            x = session.prompt(f' VQH=> ', validator=validator, validate_while_typing=False)
+            x = x.split(' ')
+            if x[0] == 'next' or x[0] == 'n':
+                print(f'Score Features not implemented yet for the VQH!')
 
 
-        elif x[0] == 'quit' or x[0] == 'q':
-            progQuit=True
-            continue
+            elif x[0] == 'quit' or x[0] == 'q':
+                progQuit=True
+                continue
 
-        
-        # Main VQH Command
-        elif x[0] == 'runvqe':
-            if len(x) == 1:
-                print("running VQE")
-                #generated_quasi_dist, generated_values = vqh.run_vqh(globalsvqh.SESSIONPATH)
-                vqh.runvqe(config.SESSIONPATH)
-            else:
-                print('Error! Try Again')
-        
-        # Sonify From a previously generated VQE result in the session folder
-        elif x[0] == 'playfile':
-            son_type = 1
-            if len(x) == 3:
-                son_type = int(x[2])
-            #playfile(x[1], config.SESSIONPATH, son_type)
-            vqh.playfile(x[1], config.SESSIONPATH, son_type)
-        
-        # Same as using ctrl+. in SuperCollider
-        elif x[0] == 'stop':
-            #sc.freeall()
-            vqh.stop_sc_sound()
-        
-        # Sonify the last generated VQE result
-        elif x[0] == 'play':
-            if generated_quasi_dist != []:
+            
+            # Main VQH Command
+            elif x[0] == 'runvqe':
+                if len(x) == 1:
+                    print("running VQE")
+                    #generated_quasi_dist, generated_values = vqh.run_vqh(globalsvqh.SESSIONPATH)
+                    vqh.runvqe(config.SESSIONPATH)
+                else:
+                    print('Error! Try Again')
+            
+            # Sonify From a previously generated VQE result in the session folder
+            elif x[0] == 'playfile':
                 son_type = 1
-                if len(x) == 2:
-                    son_type = int(x[1])
-                #sc.sonify(generated_quasi_dist, generated_values, son_type)
-                vqh.play(son_type)
-            else:
-                print("Quasi Dists NOT generated!")
+                if len(x) == 3:
+                    son_type = int(x[2])
+                #playfile(x[1], config.SESSIONPATH, son_type)
+                vqh.playfile(x[1], config.SESSIONPATH, son_type)
+            
+            # Same as using ctrl+. in SuperCollider
+            elif x[0] == 'stop':
+                #sc.freeall()
+                vqh.stop_sc_sound()
+            
+            # Sonify the last generated VQE result
+            elif x[0] == 'play':
+                if generated_quasi_dist != []:
+                    son_type = 1
+                    if len(x) == 2:
+                        son_type = int(x[1])
+                    #sc.sonify(generated_quasi_dist, generated_values, son_type)
+                    vqh.play(son_type)
+                else:
+                    print("Quasi Dists NOT generated!")
 
-        elif x[0] == 'map':
-            if vqh.data:
+            elif x[0] == 'map':
+                if vqh.data:
+                    son_type = 1
+                    if len(x) == 2:
+                        son_type = int(x[1])
+                    #sc.sonify(generated_quasi_dist, generated_values, son_type)
+                    vqh.map_sonification(son_type)
+                    
+                else:
+                    print("Quasi Dists NOT generated!")
+            elif x[0] == 'mapfile':
                 son_type = 1
-                if len(x) == 2:
-                    son_type = int(x[1])
-                #sc.sonify(generated_quasi_dist, generated_values, son_type)
-                vqh.map_sonification(son_type)
-                
-            else:
-                print("Quasi Dists NOT generated!")
-        elif x[0] == 'mapfile':
-            son_type = 1
-            if len(x) == 3:
-                son_type = int(x[2])
-            #playfile(x[1], config.SESSIONPATH, son_type)
-            vqh.mapfile(x[1], config.SESSIONPATH, son_type)
+                if len(x) == 3:
+                    son_type = int(x[2])
+                #playfile(x[1], config.SESSIONPATH, son_type)
+                vqh.mapfile(x[1], config.SESSIONPATH, son_type)
 
-        else:
-            print(f'Not a valid input - {x}')
+
+            elif x[0] == 'realtime' or x[0] == 'rt':
+                print('')
+                vqh_controller.start()
+
+            else:
+                print(f'Not a valid input - {x}')
+
+        except KeyboardInterrupt:
+
+            print('Keyboard Interrupt!')
+            try:
+                vqh_controller.clean()
+            except Exception:
+                pass
+            progQuit = True
+            print('Exiting VQH...')
+            time.sleep(1)
+            print('Goodbye!')
+            
 
 if __name__ == '__main__':
 
@@ -258,6 +217,9 @@ Internal VQH functions:\n\
     p.add_argument('sessionpath', type=str, nargs='?', default='Session', help="Folder name where VQE data will be stored/read")
     p.add_argument('platform', type=str, nargs='?', default='local', help="Quantum Platform provider used (Local, IQM, IBMQ). Default is 'local'.")
     p.add_argument('protocol', type=str, nargs='?', default='harp', help="Encoding strategy for generating sonification data. Default is 'harp'.")
+    p.add_argument('process', type=str, nargs='?', default='test', help="Process to be sonified. Default is 'test'.")
+    p.add_argument('process_mode', type=str, nargs='?', default='fixed', help="Process mode. Default is 'fixed'.")
+    p.add_argument('rt_son', type=int, nargs='?', default=9, help="Real-time sonification method. Default is 9.")
     args = p.parse_args()
     logger.debug(args)
 
@@ -266,13 +228,26 @@ Internal VQH functions:\n\
     config.HW_INTERFACE = args.platform
 
     vqh = VQH(args.protocol, args.platform)
+    vqh_core = VQHCore('process', args.process, args.platform, args.rt_son, args.process_mode)
+    vqh_controlller = VQHController(vqh_core)
+
 
     print('=====================================================')
-    print('      VQH: Variational Quantum Harmonizer  - v1.1    ') 
-    print('          by itaborala and schwaeti, 2023            ')
-    print('                             ICCMR + DESY            ') 
-    print('     https://github.com/iccmr-quantum/VQH            ')
+    print('      VQH: Variational Quantum Harmonizer  - v0.3    ') 
+    print('          by itaborala, schwaeti, maria-aguado,      ')
+    print('               cephasteom, ariannacrippa           ')
+    print('                     2023 - 2024                     ') 
+    print('                     DESY + ICCMR                    ')
+    print('              karljansen  + iccmr-quantum            ')
+    print('         https://github.com/iccmr-quantum/VQH        ')
     print('=====================================================')
 
     # Run CLI
-    CLI(vqh)
+    pquit = multiprocessing.Value('b', False)
+    qubo_vis = multiprocessing.Process(target=update_qubo_visualization, args=(pquit,))
+    qubo_vis.start()
+
+    CLI(vqh, vqh_core, vqh_controlller)
+    pquit.value = True
+    print('Exited VQH')
+    list_active_threads()

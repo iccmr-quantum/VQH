@@ -13,7 +13,7 @@ You can find more information in our publication on the ISQCMC symposium:
 [Variational Quantum Harmonizer: Generating Chord Progressions and other Sonification Methods with the VQE Algorithm](https://doi.org/10.5281/zenodo.10206731)
 
 You can listen to music that has used the VQH in its artistic process:
-[Dependent Origination](https://www.youtube.com/playlist?list=PLZcA8yDT3f3YLiVGQOuWJrHmD7R1T4Tn-)
+[Dependent Origination (2023)](https://www.youtube.com/playlist?list=PLZcA8yDT3f3YLiVGQOuWJrHmD7R1T4Tn-) [Hexagonal Chambers (2023-24)](https://youtu.be/3FZZJFP96CQ?si=dYiKHtvZLthsXz4J&t=1580)
 
 
 ## Installation
@@ -120,4 +120,14 @@ Apart from `VQH.py`, there are _two_ other important files for the VQH workflow:
 
 ## Contributing
 
-To assist with potentioal contributions, please contact [paulo.itaborai@desy.de](mailto:paulo.itaborai@desy.de)
+
+To assist with potential contributions, please contact [paulo.itaborai@desy.de](mailto:paulo.itaborai@desy.de). 
+
+
+### Code structure
+For convenience, a schematic of the current software structure and main object hierarchies for the latest version (v0.3.x) are depicted below.
+
+![VQH Software Structure](https://github.com/iccmr-quantum/VQH/assets/28213905/9a019a5c-7c76-4c5a-babe-7ebac7a162ce)
+
+## Licence
+VQH is distributed under an MIT License. See the [LICENSE](https://github.com/iccmr-quantum/VQH/blob/main/LICENSE) file for more information.

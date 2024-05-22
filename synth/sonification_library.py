@@ -1,12 +1,14 @@
 from abstract_classes import SonificationInterface
 from synth.sc import SuperColliderMapping
 from synth.zen import ZenMapping
+from synth.osc import OSCMapping
 
 class SonificationLibrary():
     def __init__(self):
         self._interfaces = {
             "sc": SuperColliderMapping,
-            "zen": ZenMapping
+            "zen": ZenMapping,
+            "osc": OSCMapping
         }
         self._library = {
             1: {
@@ -43,6 +45,31 @@ class SonificationLibrary():
                 "description": "Additive Synthesis with 4 chromatic notes",
                 "interface": "sc",
                 "mapping": "note_loudness_multiple_4_qubits"
+            },
+            8: {
+                "description": "Subtractive synthesis with Pitchshift (dentist)",
+                "interface": "sc",
+                "mapping": "note_loudness_multiple_rs"
+            },
+            9: {
+                "description": "RealTime Synthesis",
+                "interface": "sc",
+                "mapping": "note_loudness_multiple_rt"
+            },
+            10: {
+                "description": "RealTime Arpeggios",
+                "interface": "sc",
+                "mapping": "note_cluster_intensity_rt"
+            },
+            11: {
+                "description": "Gereral RealTime OSC Mapping",
+                "interface": "osc",
+                "mapping": "publish_data"
+            },
+            12: {
+                "description": "Gerenal RealTime Additive Synthesis",
+                "interface": "sc",
+                "mapping": "note_loudness_rt"
             },
         }
     def get_mapping(self, son_type: int) -> SonificationInterface:
