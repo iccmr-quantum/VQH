@@ -1,3 +1,6 @@
+[![DOI](https://zenodo.org/badge/795539092.svg)](https://zenodo.org/badge/latestdoi/795539092)
+
+
 # VQH
 Variation Quantum Harmonizer - Sonification Methods for the VQE, or the VQE as a musical interface.
 
@@ -117,9 +120,14 @@ Apart from `VQH.py`, there are _two_ other important files for the VQH workflow:
 
 ## Contributing
 
-To assist with potentioal contributions, here a schematic of the software structure and main object hierarchies for the lates version.
+
+To assist with potential contributions, please contact [paulo.itaborai@desy.de](mailto:paulo.itaborai@desy.de). 
+
 
 ### Code structure
+For convenience, a schematic of the current software structure and main object hierarchies for the latest version (v0.3.x) are depicted below.
 
 ![VQH Software Structure](https://github.com/iccmr-quantum/VQH/assets/28213905/9a019a5c-7c76-4c5a-babe-7ebac7a162ce)
 
+## Licence
+VQH is distributed under an MIT License. See the [LICENSE](https://github.com/iccmr-quantum/VQH/blob/main/LICENSE) file for more information.
