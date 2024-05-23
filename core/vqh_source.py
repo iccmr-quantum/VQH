@@ -5,13 +5,20 @@ from typing import Protocol, Callable, Any, Union, Optional
 import json
 import numpy as np
 
+class VQHDataFileManager(Protocol):
+    def read(self, filename: str) -> Any:
+        ...
+    def write(self, filename: str, data: Any) -> None:
+        ...
+
 class VQHSourceStrategy(Protocol):
     def run(self, iteration_handler: Callable[[tuple[np.ndarray,...]], None]) -> None:
         ...
 
 class VQHFileReader:
-    def __init__(self, filename: str) -> None:
+    def __init__(self, filename: str, filem: VQHDataFileManager) -> None:
         self.filename = filename
+        self.file_manager = filem
 
     def run(self, iteration_handler: Callable[[tuple[np.ndarray,...]], None]) -> None:
         with open(self.filename) as f:
