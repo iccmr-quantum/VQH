@@ -4,12 +4,8 @@ from time import sleep
 from typing import Protocol, Callable, Any, Union, Optional
 import json
 import numpy as np
+from util.data_manager import VQHDataFileManager
 
-class VQHDataFileManager(Protocol):
-    def read(self, filename: str) -> Any:
-        ...
-    def write(self, filename: str, data: Any) -> None:
-        ...
 
 class VQHSourceStrategy(Protocol):
     def run(self, iteration_handler: Callable[[tuple[np.ndarray,...]], None]) -> None:
