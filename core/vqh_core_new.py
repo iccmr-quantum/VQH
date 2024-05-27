@@ -1,4 +1,4 @@
-from core.vqh_source import VQHSource, VQHSourceStrategy, VQHFileReader, VQHProblem, VQHProtocol, VQHProcess
+from core.vqh_source import VQHSource, VQHSourceStrategy, VQHFileStrategy, VQHProblem, VQHProtocol, VQHProcess
 from core.vqh_mapper import VQHMapper, VQHMappingStrategy
 from core.vqh_process_test import ProcessTest, ProblemTest, ProtocolTest, MappingTest
 from problem.qubo import QUBOProblem, QUBOProblemRT
@@ -13,6 +13,7 @@ import config
 
 import sys
 from util.inlets import VQHInlet, VQHOutlet
+from util.data_manager import VQHDataFileManager, VQHDataSet, FileIO, JSONFileIO
 
 
 # Quantum Hardware Connection
@@ -34,10 +35,12 @@ PROCESS_LIBRARY = {
         "qubo_algo": (VQHProcess, VQEAlgorithm, QUBOProblemRT, BasisProtocol)
 }
 
+
 REALTIME_MODES = {
         'fixed': 0,
         'segmented': 1,
         'full': 2,
+        'file': 3
 }
 
 def init_vqh_process(name, filename, rt_mode, problem_event) -> VQHProcess:
@@ -46,9 +49,9 @@ def init_vqh_process(name, filename, rt_mode, problem_event) -> VQHProcess:
     return process(problem(filename), algorithm(protocol()), rt_mode, problem_event)
 
 
-def init_vqh_file_reader(filename) -> VQHFileReader:
+def init_vqh_file_strategy(sessionname) -> VQHFileStrategy:
 
-    return VQHFileReader(filename)
+    return VQHFileStrategy(VQHDataFileManager(sessionname))
 
 def init_vqh_source(process: VQHProcess) -> VQHSource:
 
@@ -79,12 +82,13 @@ def wait_for_source_and_mapper(source: VQHSource, mapper: VQHMapper):
 
 class VQHCore:
 
-    def __init__(self, strategy_type, strategy_name, hwi_name, son_type, rt_mode_name='fixed'):
+    def __init__(self, strategy_type, strategy_name, hwi_name, son_type, rt_mode_name='fixed', session_name="Default"):
         
         self.problem_event = Event()
         self.strategy_type = strategy_type
         self.strategy_name = strategy_name
         self.rt_mode = REALTIME_MODES[rt_mode_name]
+        self.session_name = session_name
         self.strategy = self.init_strategy()
         print(f"Strategy: {self.strategy}")
 
@@ -96,7 +100,6 @@ class VQHCore:
         self.hardware_interface.get_backend()
         config.PLATFORM = self.hardware_interface
         
-        self.session_name = None
 
         self.son_type = son_type
 
@@ -109,8 +112,9 @@ class VQHCore:
     def init_strategy(self):
 
         print("Initializing strategy")
+        print(f"Strategy type: {self.strategy_type}")
         if self.strategy_type == "file":
-            return init_vqh_file_reader(self.strategy_name)
+            return init_vqh_file_strategy(self.session_name)
         elif self.strategy_type == "process":
             if self.strategy_name in ['test', 'qubo', 'qubort']:
                 print(f"This strategy '{self.strategy_name}' is deprecated. Use qubo_algo instead")

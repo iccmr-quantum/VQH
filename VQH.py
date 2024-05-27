@@ -228,7 +228,10 @@ Internal VQH functions:\n\
     config.HW_INTERFACE = args.platform
 
     vqh = VQH(args.protocol, args.platform)
-    vqh_core = VQHCore('process', args.process, args.platform, args.rt_son, args.process_mode)
+    if args.process_mode == 'file':
+        vqh_core = VQHCore('file', args.process, args.platform, args.rt_son, args.process_mode, args.sessionpath)
+    else:
+        vqh_core = VQHCore('process', args.process, args.platform, args.rt_son, args.process_mode, args.sessionpath)
     vqh_controlller = VQHController(vqh_core)
 
 

@@ -11,16 +11,17 @@ class VQHSourceStrategy(Protocol):
     def run(self, iteration_handler: Callable[[tuple[np.ndarray,...]], None]) -> None:
         ...
 
-class VQHFileReader:
-    def __init__(self, filename: str, filem: VQHDataFileManager) -> None:
-        self.filename = filename
+class VQHFileStrategy:
+    def __init__(self, filem: VQHDataFileManager) -> None:
+        self.filename = None
         self.file_manager = filem
+        self.problem = None
 
     def run(self, iteration_handler: Callable[[tuple[np.ndarray,...]], None]) -> None:
-        with open(self.filename) as f:
-            data = json.load(f)
-            for iteration in data:
-                iteration_handler(iteration)
+        dataset = self.file_manager.read(self.file_manager.latest_index)
+        #print(dataset)
+        for iteration in dataset.data:
+            iteration_handler(iteration)
 
 class VQHProblem(Protocol):
     data: np.ndarray
