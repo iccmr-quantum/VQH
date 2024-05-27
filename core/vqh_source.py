@@ -4,7 +4,7 @@ from time import sleep
 from typing import Protocol, Callable, Any, Union, Optional
 import json
 import numpy as np
-from util.data_manager import VQHDataFileManager
+from util.data_manager import VQHDataFileManager, VQHDataSet
 
 
 class VQHSourceStrategy(Protocol):
@@ -15,6 +15,7 @@ class VQHFileStrategy:
     def __init__(self, filem: VQHDataFileManager) -> None:
         self.filename = None
         self.file_manager = filem
+        self.type = 'file'
         self.problem = None
 
     def run(self, iteration_handler: Callable[[tuple[np.ndarray,...]], None]) -> None:
@@ -55,7 +56,7 @@ class VQHProcess(VQHSourceStrategy, Protocol):
 """
 
 class VQHProcess:
-    def __init__(self, problem:VQHProblem, algorithm: VQHAlgorithm, rt_mode: int=0, problem_event=None):
+    def __init__(self, problem:VQHProblem, algorithm: VQHAlgorithm, rt_mode: int=0, problem_event=None, filem:VQHDataFileManager=None) -> None:
 
         self.problem = problem
         self.algorithm = algorithm
@@ -63,6 +64,9 @@ class VQHProcess:
         self.rt_mode = rt_mode
         self.problem_event = problem_event
         self.lock = Lock()
+        self.dataset = VQHDataSet()
+        self.type = 'process'
+        self.file_manager = filem
 
         self._active = True
 
@@ -101,10 +105,15 @@ class VQHProcess:
             # Run the algorithm
             current_point = self.algorithm.run_algorithm(current_point, self.handler, **algorithm_params)
 
+            print(f'Writing Data Set to File...')
+            self.file_manager.write(self.dataset)
+
+
             print(f'Waiting for New Problem...')
 
             self.problem_event.wait()
             self.problem_event.clear()
+            self.dataset.clear()
 
             count += 1
 
@@ -146,6 +155,10 @@ class VQHSource:
     def iteration_handler(self, iteration: tuple[np.ndarray,...]) -> None:
         #print(f"Received iteration {iteration}")
         self.queue.put(iteration)
+        if self.strategy.type == 'process':
+            self.strategy.dataset += iteration
+            #print('This is a process')
+            pass
 
     def stop(self) -> None:
         #self.thread.join()

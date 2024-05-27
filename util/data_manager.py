@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from time import sleep
 from abc import ABC, abstractmethod
-from typing import Protocol
+from typing import Protocol, Union, Tuple
 import json
 import os
 import re
@@ -26,7 +26,7 @@ class VQHDataSet:
     def append_data(self, data: dict) -> None:
         self.data.append(data)
 
-    def cleanup(self) -> None:
+    def clear(self) -> None:
         self.data = []
 
     def __iadd__(self, data: dict):
@@ -34,6 +34,9 @@ class VQHDataSet:
         return self
 
 class FileIO(Protocol):
+    def __init__(self):
+        self.format: str
+        self.default_name: Union[str, Tuple[str]]
     def read(self, filepath: str) -> VQHDataSet:
         ...
 
@@ -43,6 +46,7 @@ class FileIO(Protocol):
 class JSONFileIO:
     def __init__(self):
         self.format = 'json'
+        self.default_name = 'son_data'
 
     def read(self, filepath: str) -> VQHDataSet:
         print(f"Reading data from {filepath}")
@@ -51,12 +55,17 @@ class JSONFileIO:
         return VQHDataSet(data=data)
 
     def write(self, dataset: VQHDataSet, filepath: str) -> None:
-        with open(filepath, 'w') as file:
-            json.dump(dataset.to_dict(), file)
+        print(f"Writing data to {filepath}/{self.default_name}.json")
+        with open(f'{filepath}/{self.default_name}.json', 'w') as file:
+            print(f"Data: {dataset.data}")
+            json.dump(dataset.data, file, indent=4)
+
+        print(f"Written data to {filepath}/{self.default_name}.json")
 
 class LegacyFileIO:
     def __init__(self):
         self.format = 'legacy'
+        self.default_name = ('aggregate_data', 'exp_values')
 
     def read(self, filepath: str) -> VQHDataSet:
         print(f"Reading Aggregate data from {filepath}")
@@ -71,8 +80,13 @@ class LegacyFileIO:
         return VQHDataSet(data=final_data)
 
     def write(self, dataset: VQHDataSet, filepath: str) -> None:
-        with open(filepath, 'w') as file:
-            json.dump(dataset.data, file)
+        with open(f'{filepath}/{self.default_name[0]}.json', 'w') as file:
+            aggregate_data = [item[0] for item in dataset.data]
+            json.dump(aggregate_data, file)
+
+        with open(f'{filepath}/{self.default_name[1]}.txt', 'w') as file:
+            for item in dataset.data:
+                file.write(f"{item[1]}\n")
 
     def combine_lists(self, agg, exp):
         if len(agg) != len(exp):
@@ -95,8 +109,20 @@ class VQHDataFileManager:
         self.file_io: FileIO = JSONFileIO() # Default
         print(f"Latest index: {self.latest_index}")
 
-    def write(self, data: VQHDataSet, filename: str) -> None:
-        raise NotImplementedError
+    def write(self, data: VQHDataSet) -> None:
+        if data.format == 'legacy':
+            print(f"Writing data to {self.folder_name}_Data/Data_{self.latest_index + 1}/{self.file_io.default_name[0]}.json (Format: LEGACY)")
+        else:
+            print(f"Writing data to {self.folder_name}_Data/Data_{self.latest_index + 1}/{self.file_io.default_name}.{data.format} (Format: {data.format.upper()})")
+        if data.format != self.file_io.format:
+            self.file_io = FORMATS.get(data.format)()
+            print(f"Switching to {data.format} format")
+        self.latest_index += 1
+        self.create_new_data_folder()
+
+        self.file_io.write(data, f'{self.folder_name}_Data/Data_{self.latest_index}')
+
+        
 
     def read(self, index: int = None) -> VQHDataSet:
         if not index:
@@ -104,9 +130,6 @@ class VQHDataFileManager:
 
         pattern = re.compile(r'son_data\.(.*)')
         pattern2 = re.compile(r'aggregate_data\.(.*)')
-        print(f'pwd: {os.getcwd()}')
-        print(f'pwd: {os.getcwd()}')
-        print(f'pwd: {os.getcwd()}')
         print(f'pwd: {os.getcwd()}')
         try:
             print(f"Reading data from {self.folder_name}_Data/Data_{index}")
@@ -149,6 +172,10 @@ class VQHDataFileManager:
     def create_parent_folder(self, folder_name: str) -> None:
         print(f"Creating folder: {folder_name}_Data")
         os.makedirs(f'{folder_name}_Data', exist_ok=True)
+
+    def create_new_data_folder(self) -> None:
+        print(f"Creating new dataset folder: {self.folder_name}_Data/Data_{self.latest_index}")
+        os.makedirs(f'{self.folder_name}_Data/Data_{self.latest_index}', exist_ok=True)
 
     def get_latest_index(self, folder_name: str) -> int:
         files = os.listdir(f'{folder_name}_Data')

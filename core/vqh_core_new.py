@@ -43,10 +43,10 @@ REALTIME_MODES = {
         'file': 3
 }
 
-def init_vqh_process(name, filename, rt_mode, problem_event) -> VQHProcess:
+def init_vqh_process(name, filename, rt_mode, problem_event, sessioname) -> VQHProcess:
     
     process, algorithm, problem, protocol = PROCESS_LIBRARY[name]
-    return process(problem(filename), algorithm(protocol()), rt_mode, problem_event)
+    return process(problem(filename), algorithm(protocol()), rt_mode, problem_event, VQHDataFileManager(sessioname))
 
 
 def init_vqh_file_strategy(sessionname) -> VQHFileStrategy:
@@ -119,7 +119,7 @@ class VQHCore:
             if self.strategy_name in ['test', 'qubo', 'qubort']:
                 print(f"This strategy '{self.strategy_name}' is deprecated. Use qubo_algo instead")
                 raise ValueError
-            return init_vqh_process(self.strategy_name, 'h_setup_rt.csv', self.rt_mode, self.problem_event)
+            return init_vqh_process(self.strategy_name, 'h_setup_rt.csv', self.rt_mode, self.problem_event, self.session_name)
         
 
 

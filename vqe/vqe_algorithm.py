@@ -41,6 +41,8 @@ class VQEAlgorithm:
 
         amps = self.protocol.decode(([sample], self.variables_index))
         #print(amps)
+        #for handler in handlers:
+        #    handler((amps, exp_value))
         handler((amps, exp_value))
 
 
