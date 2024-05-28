@@ -28,3 +28,5 @@ java_hexagonal_chambers/
 Patterns_Tests.ipynb
 VQH-Recordings.zip
 cligui_test*
+music21test.py
+scoretest*
