@@ -3,7 +3,7 @@ import numpy as np
 import time
 import random
 import os
-from music21 import note, stream
+from music21 import note, stream, duration
 import subprocess
 from PIL import Image
 import threading
@@ -24,9 +24,9 @@ class ScoreBuilderMapping(SonificationInterface):
         print(data)
         notes = [random.randint(60, 72) for _ in range(10)]
         for i, d in enumerate(data[0][0].items()):
-            print(f'expval: {d}')
+            print(f'val: {0.05 + np.round(d[1],2)}')
             n = note.Note(notes[i])
-            n.duration.type = 'half'
+            n.duration.quarterLength = 0.10 + 10*np.round(d[1],2)
             self.score.append(n)
 
 
