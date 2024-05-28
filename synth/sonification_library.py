@@ -2,13 +2,15 @@ from abstract_classes import SonificationInterface
 from synth.sc import SuperColliderMapping
 from synth.zen import ZenMapping
 from synth.osc import OSCMapping
+from synth.score import ScoreBuilderMapping
 
 class SonificationLibrary():
     def __init__(self):
         self._interfaces = {
             "sc": SuperColliderMapping,
             "zen": ZenMapping,
-            "osc": OSCMapping
+            "osc": OSCMapping,
+            "score": ScoreBuilderMapping
         }
         self._library = {
             1: {
@@ -70,6 +72,11 @@ class SonificationLibrary():
                 "description": "Gerenal RealTime Additive Synthesis",
                 "interface": "sc",
                 "mapping": "note_loudness_rt"
+            },
+            13: {
+                "description": "Score Measure Manipulation Test",
+                "interface": "score",
+                "mapping": "update_stream"
             },
         }
     def get_mapping(self, son_type: int) -> SonificationInterface:
