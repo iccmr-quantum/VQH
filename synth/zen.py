@@ -23,7 +23,36 @@ class ZenMapping(SonificationInterface):
         self._data_url = cred['url'] 
         self._headers = cred['headers']
         self.pwd = cred['password']
+        self.num_pages = cred['num_pages']  
         self.current_data = None
+        self.circular_book_id = cred['circular_id']
+        self._page_url = f'{self._data_url}/{self.circular_book_id}/page'
+        self.scale = None
+
+        #self.make_circular_book()
+
+    def post_page(self, data, **kwargs):
+        """Post a book to the database"""
+        bookid = self.circular_book_id
+        
+        #print(f'Posting new page in Circular book with id: {bookid}')
+        #print(self._page_url)
+        #print(self._headers)
+
+        data_dict = {}
+        #data_dict['states'] = [[int(x) for x in state] for state in data[2]]
+        data_dict['amps'] = [x for x in data[0][0].values()]
+        #data_dict['values'] = data[1]
+
+        data_msg = {
+            "content": data_dict,
+            "password": self.pwd
+        }
+
+        #print(data_dict)
+        #self.current_data = data
+        response = requests.post(self._page_url, data=json.dumps(data_msg), headers=self._headers)
+        print(f"We have composed page {response.json()['id']} of the Circular Book.")
 
     def post_book(self, data, **kwargs):
         """Post a book to the database"""
@@ -115,3 +144,16 @@ class ZenMapping(SonificationInterface):
         """Get the id of the last book in the database"""
         book = self.get_book()
         return book['key']
+
+
+    def make_circular_book(self):
+
+        circular_request = {"password": self.pwd, "num_pages": self.num_pages}
+        response = requests.post(self._data_url, data=json.dumps(circular_request), headers=self._headers)
+        print(response.json())
+        self.circular_book_id = response.json()['id']
+        print(f'Created circular book with ID: {self.circular_book_id}')
+
+
+
+

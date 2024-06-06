@@ -78,6 +78,11 @@ class SonificationLibrary():
                 "interface": "score",
                 "mapping": "update_stream"
             },
+            14: {
+                "description": "Circular Book",
+                "interface": "zen",
+                "mapping": "post_page"
+            },
         }
     def get_mapping(self, son_type: int) -> SonificationInterface:
         """Returns: sonification interface class associated with name.
