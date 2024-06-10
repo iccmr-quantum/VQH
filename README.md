@@ -2,7 +2,7 @@
 
 
 # VQH
-Variation Quantum Harmonizer - Sonification Methods for the VQE, or the VQE as a musical interface.
+Variation Quantum Harmonizer - Sonification Methods for the VQE
 
 ## Description
 The Variational Quantum Harmonizer (VQH) is a sonification project aimed at quantum algorithms. Additionally, VQH is a command-line interface tool for sonifying the Variational Quantum Eigensolver algorithm. It is also a digital musical interface, enabling artists to flexibly control/design QUBO cost functions that, being optimized by means of a variational quantum algorithm, will generate data that can be sonified in real time.
