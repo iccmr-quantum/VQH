@@ -164,7 +164,19 @@ def CLI(vqh, vqh_core, vqh_controller):
             elif x[0] == 'realtime' or x[0] == 'rt':
                 print('')
                 vqh_controller.start()
+
             elif x[0] == 'init':
+                if len(x) >= 2:
+                    vqh_core.son_type = int(x[1])
+                if len(x) >= 3:
+                    vqh_core.strategy_type = x[2]
+                    print(f'Strategy type: {vqh_core.strategy_type}')
+                if len(x) >= 4:
+                    if x[3] == 'file':
+                        print(f'Extra argument for file mode: {x[3]}. Ignoring...')
+                    else:
+                        vqh_core.strategy_name = x[4]
+                print(f'Sonification type: {vqh_core.son_type}: {vqh_core.sonification_library._library[vqh_core.son_type]}')
                 vqh_controller.init_core()
 
             else:
