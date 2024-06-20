@@ -55,7 +55,7 @@ last = False
 reset = True
 port = ''
 
-VALID_COMMANDS = ['play', 'runvqe', 'q', 'quit', 'stop', 'playfile', 'map', 'mapfile', 'realtime', 'rt']
+VALID_COMMANDS = ['play', 'runvqe', 'q', 'quit', 'stop', 'playfile', 'map', 'mapfile', 'realtime', 'rt', 'init']
 
 
 # Play sonification from a previously generated file
@@ -164,6 +164,8 @@ def CLI(vqh, vqh_core, vqh_controller):
             elif x[0] == 'realtime' or x[0] == 'rt':
                 print('')
                 vqh_controller.start()
+            elif x[0] == 'init':
+                vqh_controller.init_core()
 
             else:
                 print(f'Not a valid input - {x}')

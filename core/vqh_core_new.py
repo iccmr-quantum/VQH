@@ -89,24 +89,34 @@ class VQHCore:
         self.strategy_name = strategy_name
         self.rt_mode = REALTIME_MODES[rt_mode_name]
         self.session_name = session_name
-        self.strategy = self.init_strategy()
-        print(f"Strategy: {self.strategy}")
+        #self.strategy = self.init_strategy()
+        #print(f"Strategy: {self.strategy}")
+        self.strategy = None
 
         self.hardware_library = HardwareLibrary()
         self.sonification_library = SonificationLibrary()
         
         self.hardware_interface = self.hardware_library.get_hardware_interface(hwi_name)
-        self.hardware_interface.connect()
-        self.hardware_interface.get_backend()
-        config.PLATFORM = self.hardware_interface
+        #self.hardware_interface.connect()
+        #self.hardware_interface.get_backend()
+        #config.PLATFORM = self.hardware_interface
+        #self.init_hardware_interface()
         
 
         self.son_type = son_type
 
-        self.source = VQHSource(self.strategy)
+        #self.source = VQHSource(self.strategy)
+        self.source = None
 
-        self.mapper = self.init_mapper()
+        #self.mapper = self.init_mapper()
+        self.mapper = None
 
+    def init_hardware_interface(self):
+        print("Connecting to hardware interface")
+
+        self.hardware_interface.connect()
+        self.hardware_interface.get_backend()
+        config.PLATFORM = self.hardware_interface
 
 
     def init_strategy(self):
@@ -151,19 +161,19 @@ class VQHController:
 
         self.outlet = VQHOutlet()
 
-        self.qubos_inlet = VQHInlet(self.core.source.strategy.problem, 'qubos')
+        #self.qubos_inlet = VQHInlet(self.core.source.strategy.problem, 'qubos')
 
-        self.clock_speed_inlet = VQHInlet(self.core.mapper, 'clock_speed')
+        #self.clock_speed_inlet = VQHInlet(self.core.mapper, 'clock_speed')
 
-        self.scale_inlet = VQHInlet(self.core.mapper.synthesizer.scale, 'current_scale')
+        #self.scale_inlet = VQHInlet(self.core.mapper.synthesizer.scale, 'current_scale')
 
-        self.outlet.connect(self.qubos_inlet)
-        self.outlet.connect(self.clock_speed_inlet)
-        self.outlet.connect(self.scale_inlet)
+        #self.outlet.connect(self.qubos_inlet)
+        #self.outlet.connect(self.clock_speed_inlet)
+        #self.outlet.connect(self.scale_inlet)
 
 
         self.current_state = {}
-        self.current_state["clock_speed"] = self.core.mapper.clock_speed
+        self.current_state["clock_speed"] = 0.05#self.core.mapper.clock_speed
 
 
         
@@ -205,8 +215,30 @@ class VQHController:
                         json.dump(rt_config, f)
                 sleep(1)
 
+    def init_core(self):
+        self.core.strategy = self.core.init_strategy()
+        print(f"Strategy: {self.core.strategy}")
+        self.core.init_hardware_interface()
+        self.core.source = VQHSource(self.core.strategy)
+        self.core.mapper = self.core.init_mapper()
+
+        self.qubos_inlet = VQHInlet(self.core.source.strategy.problem, 'qubos')
+        self.clock_speed_inlet = VQHInlet(self.core.mapper, 'clock_speed')
+        self.scale_inlet = VQHInlet(self.core.mapper.synthesizer.scale, 'current_scale')
+
+        self.outlet.connect(self.qubos_inlet)
+        self.outlet.connect(self.clock_speed_inlet)
+        self.outlet.connect(self.scale_inlet)
 
     def start(self):
+
+        if not self.core.strategy:
+            raise RuntimeError("Strategy not initialized!")
+        if not self.core.source:
+            raise RuntimeError("Source not initialized!")
+        if not self.core.mapper:
+            raise RuntimeError("Mapper not initialized!")
+            
 
         print("Starting VQHController")
         self.is_active = True
