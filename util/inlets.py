@@ -24,6 +24,9 @@ class VQHOutlet:
     def disconnect(self, inlet):
         self.inlets.pop(inlet.target_attribute)
 
+    def reset(self):
+        self.inlets = {}
+
 
 
 class VQHInlet:

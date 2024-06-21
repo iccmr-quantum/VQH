@@ -1,1 +1,1 @@
-{ "clock_speed": 0.05, "end": false, "next_problem": true, "scale": "maj7chord" }
+{"clock_speed": 0.05, "end": false, "next_problem": false, "scale": "maj7chord", "qubos": "h_setup_rt.csv"}

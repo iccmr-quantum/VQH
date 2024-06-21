@@ -55,7 +55,7 @@ last = False
 reset = True
 port = ''
 
-VALID_COMMANDS = ['play', 'runvqe', 'q', 'quit', 'stop', 'playfile', 'map', 'mapfile', 'realtime', 'rt', 'init']
+VALID_COMMANDS = ['play', 'runvqe', 'q', 'quit', 'stop', 'playfile', 'map', 'mapfile', 'realtime', 'rt', 'init', 'source']
 
 
 # Play sonification from a previously generated file
@@ -166,18 +166,28 @@ def CLI(vqh, vqh_core, vqh_controller):
                 vqh_controller.start()
 
             elif x[0] == 'init':
+                print(' Setting up VQH session...')
                 if len(x) >= 2:
                     vqh_core.son_type = int(x[1])
                 if len(x) >= 3:
                     vqh_core.strategy_type = x[2]
-                    print(f'Strategy type: {vqh_core.strategy_type}')
                 if len(x) >= 4:
                     if x[3] == 'file':
                         print(f'Extra argument for file mode: {x[3]}. Ignoring...')
                     else:
                         vqh_core.strategy_name = x[4]
                 print(f'Sonification type: {vqh_core.son_type}: {vqh_core.sonification_library._library[vqh_core.son_type]}')
+                print(f'Strategy type: {vqh_core.strategy_type}')
+                print(f'Strategy name: {vqh_core.strategy_name}')
                 vqh_controller.init_core()
+
+            elif x[0] == 'source':
+                if len(x) == 1:
+                    vqh_controller.run_source()
+                elif len(x) == 2:
+                    vqh_controller.run_source(x[1])
+                elif len(x) == 3:
+                    vqh_controller.run_source(x[1], x[2])
 
             else:
                 print(f'Not a valid input - {x}')

@@ -84,7 +84,10 @@ class VQHProcess:
         print('NON-REALTIME MODE')
         print('NOT IMPLEMENTED YET! Use "segmented" mode for now. Exiting...')
         sleep(2)
-        raise NotImplementedError
+        self.handler = iteration_handler
+
+        #raise NotImplementedError
+        #needs to send sentinel to queue?
 
 
     def run_segmented(self, iteration_handler: Callable[[Any], Any]):
@@ -138,9 +141,9 @@ class VQHProcess:
             raise ValueError
 
 class VQHSource:
-    def __init__(self, strategy: VQHSourceStrategy):
+    def __init__(self, strategy: VQHSourceStrategy, queue: Queue) -> None:
         self.strategy = strategy
-        self.queue = Queue()
+        self.queue = queue
         self.sentinel = None
         self.is_done = False
         self.thread = Thread(target=self.run_strategy)
