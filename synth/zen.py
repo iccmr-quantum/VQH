@@ -1,4 +1,4 @@
-from abstract_classes import SonificationInterface
+from core.vqh_interfaces import MappingInterface
 import asyncio
 import numpy as np
 import time
@@ -8,7 +8,7 @@ import os
 import xml.etree.ElementTree as ET
 
 
-class ZenMapping(SonificationInterface):
+class ZenMapping(MappingInterface):
     def __init__(self):
     
         if os.path.exists('synth/credentials_zen_local.json'):

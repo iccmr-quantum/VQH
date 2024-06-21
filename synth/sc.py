@@ -1,4 +1,4 @@
-from abstract_classes import SonificationInterface
+from core.vqh_interfaces import MappingInterface
 import asyncio
 import numpy as np
 from supercollider import Synth, Server, Group, AudioBus
@@ -52,7 +52,7 @@ class MusicalScale:
             return x
 
 
-class SuperColliderMapping(SonificationInterface):
+class SuperColliderMapping(MappingInterface):
     def __init__(self):
         self.server = Server()
         notesd = {"c":"amp1", "c#":"amp2", "d":"amp3", "d#":"amp4", "e":"amp5", "f":"amp6", "f#":"amp7", "g":"amp8", "g#":"amp9", "a":"amp10", "a#":"amp11", "b":"amp12", "new":"amp13"}

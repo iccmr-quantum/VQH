@@ -1,4 +1,4 @@
-from abstract_classes import SonificationInterface
+from core.vqh_interfaces import MappingInterface
 from synth.sc import SuperColliderMapping
 from synth.zen import ZenMapping
 from synth.osc import OSCMapping
@@ -84,7 +84,7 @@ class SonificationLibrary():
                 "mapping": "post_page"
             },
         }
-    def get_mapping(self, son_type: int) -> SonificationInterface:
+    def get_mapping(self, son_type: int) -> MappingInterface:
         """Returns: sonification interface class associated with name.
         """
 

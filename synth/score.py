@@ -1,4 +1,4 @@
-from abstract_classes import SonificationInterface
+from core.vqh_interfaces import MappingInterface
 import numpy as np
 import time
 import random
@@ -9,7 +9,7 @@ from PIL import Image
 import threading
 
 
-class ScoreBuilderMapping(SonificationInterface):
+class ScoreBuilderMapping(MappingInterface):
     def __init__(self):
 
         self.score = stream.Stream()
