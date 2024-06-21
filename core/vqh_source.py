@@ -8,21 +8,35 @@ from util.data_manager import VQHDataFileManager, VQHDataSet
 
 
 class VQHSourceStrategy(Protocol):
-    def run(self, iteration_handler: Callable[[tuple[np.ndarray,...]], None]) -> None:
+    def run(self, iteration_handler: Callable[[tuple[np.ndarray,...]], None], **kwargs) -> None:
         ...
 
 class VQHFileStrategy:
-    def __init__(self, filem: VQHDataFileManager) -> None:
-        self.filename = None
+    def __init__(self, filem: VQHDataFileManager, filenum=0) -> None:
+        self.filenumber = filenum
         self.file_manager = filem
         self.type = 'file'
         self.problem = None
 
-    def run(self, iteration_handler: Callable[[tuple[np.ndarray,...]], None]) -> None:
+    def run_latest(self, iteration_handler: Callable[[tuple[np.ndarray,...]], None]) -> None:
         dataset = self.file_manager.read(self.file_manager.latest_index)
         #print(dataset)
         for iteration in dataset.data:
             iteration_handler(iteration)
+    def run_index(self, iteration_handler: Callable[[tuple[np.ndarray,...]], None], index:int=0) -> None:
+        dataset = self.file_manager.read(index)
+        for iteration in dataset.data:
+            iteration_handler(iteration)
+    
+    def run(self, iteration_handler: Callable[[tuple[np.ndarray,...]], None]) -> None:
+
+
+        if self.filenumber == 0:
+            self.run_latest(iteration_handler)
+
+        elif self.filenumber > 0:
+            self.run_index(iteration_handler, self.filenumber)
+
 
 class VQHProblem(Protocol):
     data: np.ndarray
@@ -148,7 +162,7 @@ class VQHProcess:
         sleep(2)
         raise NotImplementedError
 
-    def run(self, iteration_handler):
+    def run(self, iteration_handler, **kwargs):
         print('Running VQH Process...')
         if self.rt_mode == 0:
             self.run_fixed(iteration_handler)

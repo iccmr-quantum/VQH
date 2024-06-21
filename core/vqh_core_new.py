@@ -49,7 +49,9 @@ def init_vqh_process(name, filename, rt_mode, problem_event, sessioname) -> VQHP
     return process(problem(filename), algorithm(protocol()), rt_mode, problem_event, VQHDataFileManager(sessioname))
 
 
-def init_vqh_file_strategy(sessionname) -> VQHFileStrategy:
+def init_vqh_file_strategy(sessionname, filenumber=None) -> VQHFileStrategy:
+    if filenumber:
+        return VQHFileStrategy(VQHDataFileManager(sessionname), filenumber)
 
     return VQHFileStrategy(VQHDataFileManager(sessionname))
 
@@ -120,12 +122,24 @@ class VQHCore:
         config.PLATFORM = self.hardware_interface
 
 
-    def init_strategy(self):
+    def init_strategy(self, strategy_name=None):
 
         print("Initializing strategy")
         print(f"Strategy type: {self.strategy_type}")
         if self.strategy_type == "file":
-            return init_vqh_file_strategy(self.session_name)
+            if isinstance(self.strategy_name, type(None)):
+                return init_vqh_file_strategy(self.session_name)
+
+            else:
+                try:
+                    file_number = int(self.strategy_name)
+                except ValueError as e:
+                    print(e)
+                    print(f"File strategies require integer strategy names. Using 'None' instead.")
+                    return init_vqh_file_strategy(self.session_name)
+                return init_vqh_file_strategy(self.session_name, file_number)
+
+
         elif self.strategy_type == "process":
             if self.strategy_name in ['test', 'qubo', 'qubort']:
                 print(f"This strategy '{self.strategy_name}' is deprecated. Use qubo_algo instead")
