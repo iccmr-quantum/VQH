@@ -195,7 +195,7 @@ def CLI(vqh, vqh_core, vqh_controller):
                 if len(x) == 1:
                     vqh_controller.run_mapper()
                 elif len(x) == 2:
-                    vqh_controller.run_mapper(x[1])
+                    vqh_controller.run_mapper(int(x[1]))
 
             elif x[0] == 'queue':
                 if len(x) == 1:
