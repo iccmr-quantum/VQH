@@ -20,7 +20,6 @@ import time
 # Global variables
 import config
 
-#from core.vqh_core_old import VQH
 from core.vqh_core_new import VQHCore, VQHController
 
 # Event Management
@@ -93,7 +92,7 @@ def CLI(vqh_core, vqh_controller):
 
     # prompt preparation
     session = PromptSession()
-    validator = Validator.from_callable(is_command, error_message='This command does not exist. Check for mispellings.')
+    validator = Validator.from_callable(is_command, error_message='This command does not exist (or is deprecated). Check for mispellings.')
 
     while not progQuit:
         try:
@@ -134,30 +133,7 @@ def CLI(vqh_core, vqh_controller):
                 raise ValueError('This command is deprecated. ')
                 #sc.freeall()
                 #vqh.stop_sc_sound()
-            
-            # Sonify the last generated VQE result
-            elif x[0] == 'play':
-                raise ValueError('This command is deprecated. Use "son" instead.')
-                if generated_quasi_dist != []:
-                    son_type = 1
-                    if len(x) == 2:
-                        son_type = int(x[1])
-                    #sc.sonify(generated_quasi_dist, generated_values, son_type)
-                    #vqh.play(son_type)
-                else:
-                    print("Quasi Dists NOT generated!")
 
-            elif x[0] == 'map':
-                raise ValueError('This command is deprecated. Use "son" instead.')
-                if vqh.data:
-                    son_type = 1
-                    if len(x) == 2:
-                        son_type = int(x[1])
-                    #sc.sonify(generated_quasi_dist, generated_values, son_type)
-                    #vqh.map_sonification(son_type)
-                    
-                else:
-                    print("Quasi Dists NOT generated!")
             elif x[0] == 'mapfile':
                 raise ValueError('This command is deprecated. Use "source file + son" instead.')
                 son_type = 1
@@ -189,6 +165,7 @@ def CLI(vqh_core, vqh_controller):
                 print(f'Strategy name: {vqh_core.strategy_name}')
                 vqh_controller.init_core()
 
+            # Generate sonification data manually from a quantum process
             elif x[0] == 'source':
                 if len(x) == 1:
                     vqh_controller.run_source()
@@ -197,7 +174,8 @@ def CLI(vqh_core, vqh_controller):
                 elif len(x) == 3:
                     vqh_controller.run_source(x[1], x[2])
 
-            elif x[0] == 'son':
+            # Sonify the last generated result
+            elif x[0] == 'map':
                 if len(x) == 1:
                     vqh_controller.run_mapper()
                 elif len(x) == 2:
@@ -271,7 +249,6 @@ Internal VQH functions:\n\
     config.SESSIONPATH = args.sessionpath
     config.HW_INTERFACE = args.platform
 
-    #vqh = VQH(args.protocol, args.platform)
     if args.process_mode == 'file':
         vqh_core = VQHCore('file', args.process, args.platform, args.rt_son, args.process_mode, args.sessionpath)
     else:

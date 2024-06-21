@@ -207,5 +207,6 @@ class VQHSource:
         print("Thread started")
         self.is_done = False
         self.strategy.run(self.iteration_handler)
+        print("Putting sentinel...")
         self.queue.put(self.sentinel)
         self.is_done = True

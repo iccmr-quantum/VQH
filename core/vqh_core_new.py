@@ -235,7 +235,7 @@ class VQHController:
         elif self.rt_mode == 0 and thread == 'mapper':
             print("FIXED mode: Mapper")
 
-            while self.is_active:
+            while not self.core.mapper.is_done:
                 with open("rt_conf.json", "r") as f:
                     rt_config = json.load(f)
 
