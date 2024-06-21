@@ -45,46 +45,6 @@ class VQEAlgorithm:
         #    handler((amps, exp_value))
         handler((amps, exp_value))
 
-
-
-    def run_segmented(self, iteration_handler):
-
-        '''Run harmonizer algorithm for list of qubos and list of iterations. VQE is performed for the i-th qubo for i-th number of iterations.'''
-        #global PATH
-
-        print('SEGMENTED')
-
-        self.handler = iteration_handler
-        # loop over qubos
-        count = 0
-        while self.active:
-            
-            print(f'Next Segment: #{count}')
-
-            # Load latest config file
-            with open("vqe_conf.json") as cfile:
-                kwargs = json.load(cfile)
-            
-            operator, self.variables_index = self.protocol.encode(self.problem)
-            
-            #Optimizer TODO: Include the iteration counter somehow
-            optimizer = self.return_optimizer(
-                kwargs['optimizer_name'], kwargs['iterations'][0])
-            ansatz = EfficientSU2(num_qubits=len(self.variables_index), reps=kwargs['reps'], entanglement=kwargs['entanglement'])
-            
-            # Initial point
-            if count == 0:
-                initial_point = np.zeros(ansatz.num_parameters)
-            ansatz_temp = copy.deepcopy(ansatz)
-            vqe_experiment = SamplingVQE()
-            vqe_experiment.update_config()
-            result, binary_probabilities, expectation_values = vqe_experiment.run_vqe(
-                    ansatz_temp, operator, optimizer, initial_point, callback=(self.vqe_callback, iteration_handler))
-
-
-            # Set initital point for next qubo to be the optimal point of the previous qubo
-            initial_point = result.x
-
     def init_point(self):
         if self.num_parameters == 0:
             print('No parameters found')

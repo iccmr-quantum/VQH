@@ -19,9 +19,6 @@ class QuantumHardwareInterface(ABC):
     def get_backend(self):
         pass
 
-    @abstractmethod
-    def optimize(self):
-        pass
 
 class MappingInterface:
 

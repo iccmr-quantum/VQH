@@ -20,7 +20,7 @@ import time
 # Global variables
 import config
 
-from core.vqh_core_old import VQH
+#from core.vqh_core_old import VQH
 from core.vqh_core_new import VQHCore, VQHController
 
 # Event Management
@@ -86,7 +86,7 @@ def list_active_threads():
         print(f"Thread Name: {thread.name}, Alive: {thread.is_alive()}")
 
 
-def CLI(vqh, vqh_core, vqh_controller):
+def CLI(vqh_core, vqh_controller):
     global progQuit, comp, last, reset, generated_quasi_dist, comp_events
     generated_quasi_dist = []
     
@@ -112,53 +112,59 @@ def CLI(vqh, vqh_core, vqh_controller):
             
             # Main VQH Command
             elif x[0] == 'runvqe':
+                raise ValueError('This command is deprecated. Use "source" instead.')
                 if len(x) == 1:
                     print("running VQE")
                     #generated_quasi_dist, generated_values = vqh.run_vqh(globalsvqh.SESSIONPATH)
-                    vqh.runvqe(config.SESSIONPATH)
+                    #vqh.runvqe(config.SESSIONPATH)
                 else:
                     print('Error! Try Again')
             
             # Sonify From a previously generated VQE result in the session folder
             elif x[0] == 'playfile':
+                raise ValueError('This command is deprecated. Use "source file + son" instead.')
                 son_type = 1
                 if len(x) == 3:
                     son_type = int(x[2])
                 #playfile(x[1], config.SESSIONPATH, son_type)
-                vqh.playfile(x[1], config.SESSIONPATH, son_type)
+                #vqh.playfile(x[1], config.SESSIONPATH, son_type)
             
             # Same as using ctrl+. in SuperCollider
             elif x[0] == 'stop':
+                raise ValueError('This command is deprecated. ')
                 #sc.freeall()
-                vqh.stop_sc_sound()
+                #vqh.stop_sc_sound()
             
             # Sonify the last generated VQE result
             elif x[0] == 'play':
+                raise ValueError('This command is deprecated. Use "son" instead.')
                 if generated_quasi_dist != []:
                     son_type = 1
                     if len(x) == 2:
                         son_type = int(x[1])
                     #sc.sonify(generated_quasi_dist, generated_values, son_type)
-                    vqh.play(son_type)
+                    #vqh.play(son_type)
                 else:
                     print("Quasi Dists NOT generated!")
 
             elif x[0] == 'map':
+                raise ValueError('This command is deprecated. Use "son" instead.')
                 if vqh.data:
                     son_type = 1
                     if len(x) == 2:
                         son_type = int(x[1])
                     #sc.sonify(generated_quasi_dist, generated_values, son_type)
-                    vqh.map_sonification(son_type)
+                    #vqh.map_sonification(son_type)
                     
                 else:
                     print("Quasi Dists NOT generated!")
             elif x[0] == 'mapfile':
+                raise ValueError('This command is deprecated. Use "source file + son" instead.')
                 son_type = 1
                 if len(x) == 3:
                     son_type = int(x[2])
                 #playfile(x[1], config.SESSIONPATH, son_type)
-                vqh.mapfile(x[1], config.SESSIONPATH, son_type)
+                #vqh.mapfile(x[1], config.SESSIONPATH, son_type)
 
 
             elif x[0] == 'realtime' or x[0] == 'rt':
@@ -265,7 +271,7 @@ Internal VQH functions:\n\
     config.SESSIONPATH = args.sessionpath
     config.HW_INTERFACE = args.platform
 
-    vqh = VQH(args.protocol, args.platform)
+    #vqh = VQH(args.protocol, args.platform)
     if args.process_mode == 'file':
         vqh_core = VQHCore('file', args.process, args.platform, args.rt_son, args.process_mode, args.sessionpath)
     else:
@@ -288,7 +294,7 @@ Internal VQH functions:\n\
     qubo_vis = multiprocessing.Process(target=update_qubo_visualization, args=(pquit,))
     qubo_vis.start()
 
-    CLI(vqh, vqh_core, vqh_controlller)
+    CLI(vqh_core, vqh_controlller)
     pquit.value = True
     print('Exited VQH')
     list_active_threads()

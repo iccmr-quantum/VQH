@@ -38,15 +38,3 @@ class VQHInlet:
     def update(self, message):
         setattr(self.target_instance, self.target_attribute, message)
 
-
-class InletLinkedAttribute:
-    def __init__(self, setter_method):
-        self.setter_method = setter_method
-        self.lock = Lock()
-
-    def __get__(self, instance, owner): 
-        return self.getter(instance)
-
-    def __set__(self, instance, value):
-        with self.lock:
-            self.setter_method(value)
