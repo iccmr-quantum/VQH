@@ -82,9 +82,30 @@ class VQHProcess:
 
     def run_fixed(self, iteration_handler: Callable[[Any], Any])-> None:
         print('NON-REALTIME MODE')
-        print('NOT IMPLEMENTED YET! Use "segmented" mode for now. Exiting...')
-        sleep(2)
+        #print('NOT IMPLEMENTED YET! Use "segmented" mode for now. Exiting...')
+        #sleep(2)
         self.handler = iteration_handler
+
+        count = 0
+        
+        for c in range(1):
+
+            print(f'Fixed Problem: #{count}')
+
+            # Prepare the algorithm
+            algorithm_params = self.algorithm.prepare(self.problem, count)
+            if count == 0:
+                current_point = self.algorithm.init_point()
+
+            # Run the algorithm
+            current_point = self.algorithm.run_algorithm(current_point, self.handler, **algorithm_params)
+
+            print(f'Writing Data Set to File...')
+            self.file_manager.write(self.dataset)
+
+            count += 1
+
+
 
         #raise NotImplementedError
         #needs to send sentinel to queue?

@@ -225,11 +225,13 @@ class VQHController:
                 with open("rt_conf.json", "r") as f:
                     rt_config = json.load(f)
 
-                for inlet in self.outlet.inlets:
+                for inlet in self.outlet.inlets.values():
                     try:
                         getattr(self, f"update_{inlet.name}")(rt_config[inlet.name])
+                        print(f"Updated {inlet.name}")
                     except Exception as e:
                         print(f"Skipping {inlet.name} update")
+                        print(e)
                 sleep(1)
             return
 
@@ -305,7 +307,8 @@ class VQHController:
                         json.dump(rt_config, f)
                 sleep(1)
 
-    def init_core(self):
+    def init_core(self, mode=1):
+        self.rt_mode = mode
         self.reset_outlet()
         self.core.strategy = self.core.init_strategy()
         print(f"Strategy: {self.core.strategy}")
@@ -390,6 +393,12 @@ class VQHController:
     def reset_outlet(self):
         print("Resetting Outlet")
         self.outlet.reset()
+
+    def print_queue(self):
+        print(f"Queue: {self.core.queue.queue}")
+
+    def queue_reset(self):
+        self.core.queue.queue.clear()
 
     def clean(self):
         print("Cleaning VQHController")
