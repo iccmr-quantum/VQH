@@ -1,5 +1,4 @@
-
-from abstract_classes import QuantumHardwareInterface
+from core.vqh_interfaces import QuantumHardwareInterface
 from iqm.qiskit_iqm import IQMProvider
 from qiskit import execute
 #from qiskit_ibm_provider import IBMProvider

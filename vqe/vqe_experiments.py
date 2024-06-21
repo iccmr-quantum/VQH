@@ -20,8 +20,9 @@ import os
 import config
 from shutil import copy2
 
-from abstract_classes import VQHProtocol, QuantumHardwareInterface
+from abstract_classes import VQHProtocol
 
+from core.vqh_interfaces import QuantumHardwareInterface
 
 
 mpl.rcParams['toolbar'] = 'None'

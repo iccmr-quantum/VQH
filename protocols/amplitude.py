@@ -25,7 +25,7 @@ import os
 import config
 from shutil import copy2
 
-from abstract_classes import VQHProtocol, QuantumHardwareInterface
+from abstract_classes import VQHProtocol, QuantumHardwareInterfaceOld
 from vqe.vqe_experiments import SamplingVQE
 
 mpl.rcParams['toolbar'] = 'None'
@@ -43,7 +43,7 @@ logger.addHandler(handler)
 
 global PATH
 
-from abstract_classes import VQHProtocol, QuantumHardwareInterface
+from abstract_classes import VQHProtocol, QuantumHardwareInterfaceOld
 
 
 # -------- FUNCTION DECLARATIONS --------

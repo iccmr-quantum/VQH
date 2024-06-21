@@ -1,4 +1,4 @@
-from abstract_classes import QuantumHardwareInterface
+from core.vqh_interfaces import QuantumHardwareInterface
 from hardware.local import LocalSimulatorInterface
 from hardware.iqm import IQMHardwareInterface, IQMRealHardwareInterface
 
