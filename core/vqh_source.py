@@ -4,20 +4,39 @@ from time import sleep
 from typing import Protocol, Callable, Any, Union, Optional
 import json
 import numpy as np
+from util.data_manager import VQHDataFileManager, VQHDataSet
+
 
 class VQHSourceStrategy(Protocol):
-    def run(self, iteration_handler: Callable[[tuple[np.ndarray,...]], None]) -> None:
+    def run(self, iteration_handler: Callable[[tuple[np.ndarray,...]], None], **kwargs) -> None:
         ...
 
-class VQHFileReader:
-    def __init__(self, filename: str) -> None:
-        self.filename = filename
+class VQHFileStrategy:
+    def __init__(self, filem: VQHDataFileManager, filenum=0) -> None:
+        self.filenumber = filenum
+        self.file_manager = filem
+        self.type = 'file'
+        self.problem = None
 
+    def run_latest(self, iteration_handler: Callable[[tuple[np.ndarray,...]], None]) -> None:
+        dataset = self.file_manager.read(self.file_manager.latest_index)
+        #print(dataset)
+        for iteration in dataset.data:
+            iteration_handler(iteration)
+    def run_index(self, iteration_handler: Callable[[tuple[np.ndarray,...]], None], index:int=0) -> None:
+        dataset = self.file_manager.read(index)
+        for iteration in dataset.data:
+            iteration_handler(iteration)
+    
     def run(self, iteration_handler: Callable[[tuple[np.ndarray,...]], None]) -> None:
-        with open(self.filename) as f:
-            data = json.load(f)
-            for iteration in data:
-                iteration_handler(iteration)
+
+
+        if self.filenumber == 0:
+            self.run_latest(iteration_handler)
+
+        elif self.filenumber > 0:
+            self.run_index(iteration_handler, self.filenumber)
+
 
 class VQHProblem(Protocol):
     data: np.ndarray
@@ -51,7 +70,7 @@ class VQHProcess(VQHSourceStrategy, Protocol):
 """
 
 class VQHProcess:
-    def __init__(self, problem:VQHProblem, algorithm: VQHAlgorithm, rt_mode: int=0, problem_event=None):
+    def __init__(self, problem:VQHProblem, algorithm: VQHAlgorithm, rt_mode: int=0, problem_event=None, filem:VQHDataFileManager=None) -> None:
 
         self.problem = problem
         self.algorithm = algorithm
@@ -59,6 +78,9 @@ class VQHProcess:
         self.rt_mode = rt_mode
         self.problem_event = problem_event
         self.lock = Lock()
+        self.dataset = VQHDataSet()
+        self.type = 'process'
+        self.file_manager = filem
 
         self._active = True
 
@@ -74,9 +96,33 @@ class VQHProcess:
 
     def run_fixed(self, iteration_handler: Callable[[Any], Any])-> None:
         print('NON-REALTIME MODE')
-        print('NOT IMPLEMENTED YET! Use "segmented" mode for now. Exiting...')
-        sleep(2)
-        raise NotImplementedError
+        #print('NOT IMPLEMENTED YET! Use "segmented" mode for now. Exiting...')
+        #sleep(2)
+        self.handler = iteration_handler
+
+        count = 0
+        
+        for c in range(1):
+
+            print(f'Fixed Problem: #{count}')
+
+            # Prepare the algorithm
+            algorithm_params = self.algorithm.prepare(self.problem, count)
+            if count == 0:
+                current_point = self.algorithm.init_point()
+
+            # Run the algorithm
+            current_point = self.algorithm.run_algorithm(current_point, self.handler, **algorithm_params)
+
+            print(f'Writing Data Set to File...')
+            self.file_manager.write(self.dataset)
+
+            count += 1
+
+
+
+        #raise NotImplementedError
+        #needs to send sentinel to queue?
 
 
     def run_segmented(self, iteration_handler: Callable[[Any], Any]):
@@ -97,10 +143,15 @@ class VQHProcess:
             # Run the algorithm
             current_point = self.algorithm.run_algorithm(current_point, self.handler, **algorithm_params)
 
+            print(f'Writing Data Set to File...')
+            self.file_manager.write(self.dataset)
+
+
             print(f'Waiting for New Problem...')
 
             self.problem_event.wait()
             self.problem_event.clear()
+            self.dataset.clear()
 
             count += 1
 
@@ -111,7 +162,7 @@ class VQHProcess:
         sleep(2)
         raise NotImplementedError
 
-    def run(self, iteration_handler):
+    def run(self, iteration_handler, **kwargs):
         print('Running VQH Process...')
         if self.rt_mode == 0:
             self.run_fixed(iteration_handler)
@@ -125,9 +176,9 @@ class VQHProcess:
             raise ValueError
 
 class VQHSource:
-    def __init__(self, strategy: VQHSourceStrategy):
+    def __init__(self, strategy: VQHSourceStrategy, queue: Queue) -> None:
         self.strategy = strategy
-        self.queue = Queue()
+        self.queue = queue
         self.sentinel = None
         self.is_done = False
         self.thread = Thread(target=self.run_strategy)
@@ -142,6 +193,10 @@ class VQHSource:
     def iteration_handler(self, iteration: tuple[np.ndarray,...]) -> None:
         #print(f"Received iteration {iteration}")
         self.queue.put(iteration)
+        if self.strategy.type == 'process':
+            self.strategy.dataset += iteration
+            #print('This is a process')
+            pass
 
     def stop(self) -> None:
         #self.thread.join()
@@ -152,5 +207,6 @@ class VQHSource:
         print("Thread started")
         self.is_done = False
         self.strategy.run(self.iteration_handler)
+        print("Putting sentinel...")
         self.queue.put(self.sentinel)
         self.is_done = True

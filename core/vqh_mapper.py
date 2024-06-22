@@ -56,10 +56,6 @@ class VQHMapper:
             
             sleep(self.clock_speed)
 
-    def update_clock_speed(self, speed: int) -> None:
-        with self.clock_lock:
-            self.clock_speed = speed
-        #print(f"Clock speed updated to {speed}")
 
     def stop(self) -> None:
         self.thread.join()

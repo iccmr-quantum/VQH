@@ -1,11 +1,11 @@
-from abstract_classes import SonificationInterface
+from core.vqh_interfaces import MappingInterface
 import numpy as np
 import time
 from pythonosc.udp_client import SimpleUDPClient
 import json
 from synth.sc import MusicalScale
 
-class OSCMapping(SonificationInterface):
+class OSCMapping(MappingInterface):
     def __init__(self, ip:str="127.0.0.1", port:int=1450) -> None:
         self.client = SimpleUDPClient(ip, port)
         self.scale = MusicalScale()

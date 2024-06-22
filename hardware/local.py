@@ -1,4 +1,4 @@
-from abstract_classes import QuantumHardwareInterface
+from core.vqh_interfaces import QuantumHardwareInterface
 from qiskit_aer import AerProvider
 from qiskit import execute
 #from qiskit_ibm_provider import IBMProvider

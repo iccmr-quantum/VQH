@@ -20,8 +20,8 @@ import os
 import config
 from shutil import copy2
 
-from abstract_classes import VQHProtocol, QuantumHardwareInterface
 
+from core.vqh_interfaces import QuantumHardwareInterface
 
 
 mpl.rcParams['toolbar'] = 'None'
@@ -43,12 +43,7 @@ class SamplingVQE():
 
 
     def __init__(self):
-        self.config = {}
-
-    def update_config(self):
-        with open("vqe_conf.json", 'r') as cfile:
-            self.config = json.load(cfile)
-
+        pass
 
 
     def run_vqe(self, ansatz, operator, optimizer, initial_point, callback=None):
