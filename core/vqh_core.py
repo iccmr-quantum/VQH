@@ -30,7 +30,7 @@ from control_to_setup2 import json_to_csv
 
 PROCESS_LIBRARY = {
         "test": (ProcessTest, ProblemTest, ProtocolTest), #Deprecated
-        "qubo_algo": (VQHProcess, VQEAlgorithm, QUBOProblem, BasisProtocol)
+        "qubo": (VQHProcess, VQEAlgorithm, QUBOProblem, BasisProtocol)
 }
 
 
@@ -128,7 +128,7 @@ class VQHCore:
 
         elif self.strategy_type == "process":
             if self.strategy_name not in PROCESS_LIBRARY.keys() or self.strategy_name in ['test', None]:
-                print(f"This strategy '{self.strategy_name}' does not exist (or is deprecated). Use qubo_algo instead")
+                print(f"This strategy '{self.strategy_name}' does not exist (or is deprecated). Use qubo instead")
                 raise ValueError
             return init_vqh_process(self.strategy_name, 'h_setup_rt.csv', self.rt_mode, self.problem_event, self.session_name)
         
