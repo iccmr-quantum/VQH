@@ -3,7 +3,6 @@ from core.vqh_mapper import VQHMapper, VQHMappingStrategy
 from core.vqh_process_test import ProcessTest, ProblemTest, ProtocolTest, MappingTest
 from problem.qubo import QUBOProblem
 from protocols.basis import BasisProtocol
-from vqe.vqe_process import VQEProcess
 from vqe.vqe_algorithm import VQEAlgorithm
 from time import sleep
 from threading import Thread, Event
