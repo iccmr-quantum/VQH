@@ -1,7 +1,7 @@
 from core.vqh_source import VQHSource, VQHSourceStrategy, VQHFileStrategy, VQHProblem, VQHProtocol, VQHProcess
 from core.vqh_mapper import VQHMapper, VQHMappingStrategy
 from core.vqh_process_test import ProcessTest, ProblemTest, ProtocolTest, MappingTest
-from problem.qubo import QUBOProblem, QUBOProblemRT
+from problem.qubo import QUBOProblem
 from protocols.basis import BasisProtocol
 from vqe.vqe_process import VQEProcess
 from vqe.vqe_algorithm import VQEAlgorithm
@@ -30,9 +30,7 @@ from control_to_setup2 import json_to_csv
 
 PROCESS_LIBRARY = {
         "test": (ProcessTest, ProblemTest, ProtocolTest), #Deprecated
-        "qubo": (VQEProcess, QUBOProblem, BasisProtocol), #Deprecated
-        "qubort": (VQEProcess, QUBOProblemRT, BasisProtocol), #Deprecated
-        "qubo_algo": (VQHProcess, VQEAlgorithm, QUBOProblemRT, BasisProtocol)
+        "qubo_algo": (VQHProcess, VQEAlgorithm, QUBOProblem, BasisProtocol)
 }
 
 
@@ -75,8 +73,6 @@ def wait_for_source_and_mapper(source: VQHSource, mapper: VQHMapper):
         if mapper.is_done and not mapper_finished:
             mapper.stop()
             mapper_finished = True
-        #print(source.is_done, mapper.is_done)
-        #print(source_finished, mapper_finished)
 
         if source_finished and mapper_finished:
             print("Ending Waiter Thread")
@@ -91,8 +87,6 @@ class VQHCore:
         self.strategy_name = strategy_name
         self.rt_mode = REALTIME_MODES[rt_mode_name]
         self.session_name = session_name
-        #self.strategy = self.init_strategy()
-        #print(f"Strategy: {self.strategy}")
         self.strategy = None
         self.queue = Queue()
 
@@ -100,18 +94,10 @@ class VQHCore:
         self.sonification_library = SonificationLibrary()
         
         self.hardware_interface = self.hardware_library.get_hardware_interface(hwi_name)
-        #self.hardware_interface.connect()
-        #self.hardware_interface.get_backend()
-        #config.PLATFORM = self.hardware_interface
-        #self.init_hardware_interface()
-        
 
         self.son_type = son_type
 
-        #self.source = VQHSource(self.strategy)
         self.source = None
-
-        #self.mapper = self.init_mapper()
         self.mapper = None
 
     def init_hardware_interface(self):
@@ -141,8 +127,8 @@ class VQHCore:
 
 
         elif self.strategy_type == "process":
-            if self.strategy_name in ['test', 'qubo', 'qubort']:
-                print(f"This strategy '{self.strategy_name}' is deprecated. Use qubo_algo instead")
+            if self.strategy_name not in PROCESS_LIBRARY.keys() or self.strategy_name in ['test', None]:
+                print(f"This strategy '{self.strategy_name}' does not exist (or is deprecated). Use qubo_algo instead")
                 raise ValueError
             return init_vqh_process(self.strategy_name, 'h_setup_rt.csv', self.rt_mode, self.problem_event, self.session_name)
         
@@ -154,7 +140,6 @@ class VQHCore:
         print("Initializing mapper")
         synth, mapping = self.sonification_library.get_mapping(self.son_type)
 
-        #return VQHMapper(mapping, synth, self.source.queue, clock_speed=0.1)
         return VQHMapper(mapping, synth, self.queue, clock_speed=0.1)
 
 
@@ -177,22 +162,11 @@ class VQHController:
 
         self.outlet = VQHOutlet()
 
-        #self.qubos_inlet = VQHInlet(self.core.source.strategy.problem, 'qubos')
-
-        #self.clock_speed_inlet = VQHInlet(self.core.mapper, 'clock_speed')
-
-        #self.scale_inlet = VQHInlet(self.core.mapper.synthesizer.scale, 'current_scale')
-
-        #self.outlet.connect(self.qubos_inlet)
-        #self.outlet.connect(self.clock_speed_inlet)
-        #self.outlet.connect(self.scale_inlet)
-
-
         self.current_state = {}
         self.current_state["clock_speed"] = 0.05#self.core.mapper.clock_speed
 
 
-    def update_scale(self, scale):
+    def update_current_scale(self, scale):
 
         if scale != self.core.mapper.synthesizer.scale.current_scale:
             self.outlet.bang({"current_scale": scale})
@@ -283,43 +257,12 @@ class VQHController:
                         json.dump(rt_config, f)
                 sleep(1)
 
-    def update_realtime_old(self):
-        print(f"Realtime mode: {self.rt_mode}")
-        if self.rt_mode == 0:
-            print("No RT mode")
-            return
-        elif self.rt_mode == 1:
-            while self.is_active:
-                with open("rt_conf.json", "r") as f:
-                    rt_config = json.load(f)
-                #print(f"Updating {rt_config}")
+        elif self.rt_mode == 2:
+            raise NotImplementedError(f'Mode {self.rt_mode} not implemented yet')
+        elif self.rt_mode == 3:
+            print("FILE MODE")
+            raise NotImplementedError(f'Mode {self.rt_mode} not implemented yet')
 
-                try:
-                    if rt_config['scale'] != self.core.mapper.synthesizer.scale.current_scale:
-                        self.outlet.bang({"current_scale": rt_config['scale']})
-                        self.current_state["scale"] = rt_config['scale']
-                except Exception as e:
-                    print('Synth not ready yet. skipping scale update')
-                    continue
-
-                if rt_config["clock_speed"] != self.core.mapper.clock_speed:
-                    self.outlet.bang({"clock_speed": rt_config["clock_speed"]})
-                    self.current_state["clock_speed"] = rt_config["clock_speed"]
-                if rt_config["end"]:
-                    print("Ending UPDATER")
-                    #self.core.mapper.stop()
-                    self.core.mapper.synthesizer.freeall()
-                    sys.exit(0)
-                    break
-                if rt_config["next_problem"]:
-                    json_to_csv('midi/qubo_control.json', 'h_setup_rt.csv')
-                    #sleep(0.05)
-                    self.outlet.bang({"qubos": "h_setup_rt.csv"})
-                    self.core.problem_event.set()
-                    rt_config["next_problem"] = False
-                    with open("rt_conf.json", "w") as f:
-                        json.dump(rt_config, f)
-                sleep(1)
 
     def init_core(self, mode=1):
         self.rt_mode = mode
@@ -426,5 +369,11 @@ class VQHController:
         #self.updater.join()
 
         
+    def stop_synth(self):
+        try:
+            self.core.mapper.synthesizer.freeall()
+        except Exception as e:
+            print(e)
+            print("Synth does not have freeall function, or is not initialized yet")
 
 
