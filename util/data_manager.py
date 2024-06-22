@@ -5,6 +5,7 @@ from typing import Protocol, Union, Tuple
 import json
 import os
 import re
+import warnings
 
 @dataclass
 class VQHDataSet:
@@ -75,7 +76,7 @@ class LegacyFileIO:
         with open(f'{filepath[:-20]}/exp_values.txt', 'r') as file:
             data2 = file.readlines()
         final_data = self.combine_lists(data, data2)
-        print(f"Final data: {final_data}")
+        #print(f"Final data: {final_data}")
 
         return VQHDataSet(data=final_data)
 
@@ -135,8 +136,9 @@ class VQHDataFileManager:
             print(f"Reading data from {self.folder_name}_Data/Data_{index}")
             files = os.listdir(f'{self.folder_name}_Data/Data_{index}')
         except FileNotFoundError:
-            print(f"Experiment folder not found for index {index}. Going to default folder")
-            raise NotImplementedError
+            warnings.warn(f"Experiment folder not found for index {index}. Going to latest folder", RuntimeWarning)
+            index = self.latest_index
+            files = os.listdir(f'{self.folder_name}_Data/Data_{index}')
 
 
         data_files = [file for file in files if pattern.match(file)]

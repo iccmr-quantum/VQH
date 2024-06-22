@@ -20,7 +20,7 @@ import time
 # Global variables
 import config
 
-from core.vqh_core_new import VQHCore, VQHController
+from core.vqh_core import VQHCore, VQHController
 
 # Event Management
 import json
@@ -54,7 +54,7 @@ last = False
 reset = True
 port = ''
 
-VALID_COMMANDS = ['play', 'runvqe', 'q', 'quit', 'stop', 'playfile', 'map', 'mapfile', 'realtime', 'rt', 'init', 'source', 'queue', 'son']
+VALID_COMMANDS = ['q', 'quit', 'stop', 'map', 'mapfile', 'realtime', 'rt', 'init', 'source', 'queue']
 
 
 # Play sonification from a previously generated file
@@ -101,7 +101,7 @@ def CLI(vqh_core, vqh_controller):
             x = session.prompt(f' VQH=> ', validator=validator, validate_while_typing=False)
             x = x.split(' ')
             if x[0] == 'next' or x[0] == 'n':
-                print(f'Score Features not implemented yet for the VQH!')
+                raise NotImplementedError(f'Score Features not implemented yet for the VQH!')
 
 
             elif x[0] == 'quit' or x[0] == 'q':
@@ -109,38 +109,9 @@ def CLI(vqh_core, vqh_controller):
                 continue
 
             
-            # Main VQH Command
-            elif x[0] == 'runvqe':
-                raise ValueError('This command is deprecated. Use "source" instead.')
-                if len(x) == 1:
-                    print("running VQE")
-                    #generated_quasi_dist, generated_values = vqh.run_vqh(globalsvqh.SESSIONPATH)
-                    #vqh.runvqe(config.SESSIONPATH)
-                else:
-                    print('Error! Try Again')
-            
-            # Sonify From a previously generated VQE result in the session folder
-            elif x[0] == 'playfile':
-                raise ValueError('This command is deprecated. Use "source file + son" instead.')
-                son_type = 1
-                if len(x) == 3:
-                    son_type = int(x[2])
-                #playfile(x[1], config.SESSIONPATH, son_type)
-                #vqh.playfile(x[1], config.SESSIONPATH, son_type)
-            
-            # Same as using ctrl+. in SuperCollider
             elif x[0] == 'stop':
-                raise ValueError('This command is deprecated. ')
-                #sc.freeall()
-                #vqh.stop_sc_sound()
-
-            elif x[0] == 'mapfile':
-                raise ValueError('This command is deprecated. Use "source file + son" instead.')
-                son_type = 1
-                if len(x) == 3:
-                    son_type = int(x[2])
-                #playfile(x[1], config.SESSIONPATH, son_type)
-                #vqh.mapfile(x[1], config.SESSIONPATH, son_type)
+                vqh_controller.stop_synth()
+                print('Stopping Sounds...')
 
 
             elif x[0] == 'realtime' or x[0] == 'rt':
@@ -154,12 +125,12 @@ def CLI(vqh_core, vqh_controller):
                 if len(x) >= 3:
                     vqh_core.strategy_type = x[2]
                 if len(x) >= 4:
-                    if x[3] == 'file':
-                        print(f'Extra argument for file mode: {x[3]}. Ignoring...')
+                    if x[2] == 'file':
+                        print(f'Extra argument for file mode: {x[2]}. Ignoring...')
                     else:
-                        vqh_core.strategy_name = x[4]
+                        vqh_core.strategy_name = x[3]
                 if len(x) >= 5:
-                    vqh_core.rt_mode = int(x[5])
+                    vqh_core.rt_mode = int(x[4])
                 print(f'Sonification type: {vqh_core.son_type}: {vqh_core.sonification_library._library[vqh_core.son_type]}')
                 print(f'Strategy type: {vqh_core.strategy_type}')
                 print(f'Strategy name: {vqh_core.strategy_name}')
@@ -180,6 +151,17 @@ def CLI(vqh_core, vqh_controller):
                     vqh_controller.run_mapper()
                 elif len(x) == 2:
                     vqh_controller.run_mapper(int(x[1]))
+
+            elif x[0] == 'mapfile':
+                if len(x) == 2:
+                    print('Mapping last generated file...')
+                    vqh_controller.run_source('file')
+                    vqh_core.source.thread.join()
+                    vqh_controller.run_mapper(int(x[1]))
+                elif len(x) == 3:
+                    vqh_controller.run_source('file', x[1])
+                    vqh_core.source.thread.join()
+                    vqh_controller.run_mapper(int(x[2]))
 
             elif x[0] == 'queue':
                 if len(x) == 1:
@@ -256,12 +238,12 @@ Internal VQH functions:\n\
 
 
     print('=====================================================')
-    print('      VQH: Variational Quantum Harmonizer  - v0.3    ') 
-    print('          by itaborala, schwaeti, maria-aguado,      ')
-    print('               cephasteom, ariannacrippa           ')
+    print('      VQH: Variational Quantum Harmonizer  - v0.3.0  ')
+    print('          by itaborala, schwaeti, cephasteom,        ')
+    print('               maria-aguado, ariannacrippa           ')
     print('                     2023 - 2024                     ') 
-    print('                     DESY + ICCMR                    ')
-    print('              karljansen  + iccmr-quantum            ')
+    print('                  DESY + ICCMR + CyI                 ')
+    print('               karljansen + iccmr-quantum            ')
     print('         https://github.com/iccmr-quantum/VQH        ')
     print('=====================================================')
 
