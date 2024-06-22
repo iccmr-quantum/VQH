@@ -54,7 +54,9 @@ class ZenMapping(MappingInterface):
         response = requests.post(self._page_url, data=json.dumps(data_msg), headers=self._headers)
         print(f"We have composed page {response.json()['id']} of the Circular Book.")
 
+    #TODO: Migrate to new API
     def post_book(self, data, **kwargs):
+        raise ValueError('This method is now deprecated')
         """Post a book to the database"""
         bookid = self.get_last_book_id()
         #bookid = "book_6"
@@ -85,7 +87,9 @@ class ZenMapping(MappingInterface):
         self.current_data = data
         response = requests.post(self._data_url, data=json.dumps(data_msg), headers=self._headers)
 
+    #TODO: Migrate to new API
     def post_book_and_update_display(self, data, **kwargs):
+        raise ValueError('This method is now deprecated')
         """Post a book to the database"""
         bookid = self.get_last_book_id()
         #bookid = "book_6"

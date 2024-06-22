@@ -14,71 +14,41 @@ class SonificationLibrary():
         }
         self._library = {
             1: {
-                "description": "Additive Synthesis with 12 chromatic notes",
-                "interface": "sc",
-                "mapping": "note_loudness_multiple"
-            },
-            2: {
-                "description": "Additive Synthesis with 8 chromatic notes",
-                "interface": "sc",
-                "mapping": "note_loudness_multiple_8_qubits"
-            },
-            3: {
-                "description": "Pitchshifted Arpeggios instead of chords",
-                "interface": "sc",
-                "mapping": "note_cluster_intensity"
-            },
-            4: {
                 "description": "Send data to Zen, to be stored as a new Book",
                 "interface": "zen",
                 "mapping": "post_book"
             },
-            5: {
+            2: {
                 "description": "Send data to Zen, to be stored as a new Book, and send data to Processing to be displayed",
                 "interface": "zen",
                 "mapping": "post_book_and_update_display"
             },
-            6: {
-                "description": "Additive Synthesis with 6 chromatic notes",
-                "interface": "sc",
-                "mapping": "note_loudness_multiple_6_qubits"
-            },
-            7: {
-                "description": "Additive Synthesis with 4 chromatic notes",
-                "interface": "sc",
-                "mapping": "note_loudness_multiple_4_qubits"
-            },
-            8: {
+            3: {
                 "description": "Subtractive synthesis with Pitchshift (dentist)",
                 "interface": "sc",
                 "mapping": "note_loudness_multiple_rs"
             },
-            9: {
-                "description": "RealTime Synthesis",
-                "interface": "sc",
-                "mapping": "note_loudness_multiple_rt"
-            },
-            10: {
+            4: {
                 "description": "RealTime Arpeggios",
                 "interface": "sc",
                 "mapping": "note_cluster_intensity_rt"
             },
-            11: {
+            5: {
                 "description": "Gereral RealTime OSC Mapping",
                 "interface": "osc",
                 "mapping": "publish_data"
             },
-            12: {
+            6: {
                 "description": "Gerenal RealTime Additive Synthesis",
                 "interface": "sc",
                 "mapping": "note_loudness_rt"
             },
-            13: {
+            7: {
                 "description": "Score Measure Manipulation Test",
                 "interface": "score",
                 "mapping": "update_stream"
             },
-            14: {
+            8: {
                 "description": "Circular Book",
                 "interface": "zen",
                 "mapping": "post_page"
