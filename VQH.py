@@ -120,18 +120,20 @@ def CLI(vqh_core, vqh_controller):
 
             elif x[0] == 'init':
                 print(' Setting up VQH realtime session...')
+                print(f' Son:{type(vqh_core.son_type)}')
                 if len(x) >= 2:
                     vqh_core.son_type = int(x[1])
                 if len(x) >= 3:
                     vqh_core.strategy_type = x[2]
                 if len(x) >= 4:
                     if x[2] == 'file':
-                        print(f'Extra argument for file mode: {x[2]}. Ignoring...')
+                        #print(f'Extra argument for file mode: {x[2]}. Ignoring...')
+                        vqh_core.method_name = int(x[3])
                     else:
                         vqh_core.method_name = x[3]
                 if len(x) >= 5:
                     vqh_core.rt_mode = int(x[4])
-                print(f'Sonification type: {vqh_core.son_type}: {vqh_core.sonification_library._library[vqh_core.son_type]}')
+                print(f'Sonification type: {vqh_core.son_type}: {vqh_core.sonification_library._library[vqh_core.son_type]["description"]} ({vqh_core.sonification_library._library[vqh_core.son_type]["interface"].upper()})')
                 print(f'Strategy type: {vqh_core.strategy_type}')
                 print(f'Method name: {vqh_core.method_name}')
                 vqh_controller.init_core()
