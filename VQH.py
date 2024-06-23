@@ -191,30 +191,30 @@ if __name__ == '__main__':
 
 
     descr = 'Variational Quantum Harmonizer\n\
-CSV QUBOS syntax and rules:\n\
-- File name MUST BE "h_setup.csv"\n\
-- QUBO matrices should be exactly as the one below.\n\
-The header should contain the matrix name and note labels.\n\
-NO SPACE between commas for header and labels!\n\
-Spaces allowed only for number entries. See "h_setup-Example.csv"\n\
-    h1,label1,label2,label3,...,labeln\n\
-    label1,c11,c12,c13,...,c1n\n\
-    label2,c21,c22,c23,...,c2n\n\
-    label3,c31,c32,c33,...,c3n\n\
-    ...\n\
-    labeln,cn1,cn2,cn3,...,cnn\n\
-    h2,label1,label2,label3,...,labeln\n\
-    label1,c11,c12,c13,...,c1n\n\
-    ... \n\n\
+- QUBO problem editor can befound at "h_setup_rt.csv"\n\
+     \n\n\
 Internal VQH functions:\n\
-=> runvqe               Runs VQE and extracts sonification parameters.\n\
-=> play                 Triggers a sonification method using the current\n\
-                        VQE data extracted from the last call of "runvqe".\n\
-                        The first argument is the sonification method.\n\
-=> playfile             Triggers a sonification method using data stores in \n\
-                        the session folder. The file index is the first \n\
-                        argument. The second argument is the sonification \n\
-=> stop                 Stops all sound in SuperCollider.\n\
+=> source               Generates sonification data from a problem - or.\n\
+                        reads data from a file. The first optional argument\n\
+                        is the strategy type (file or process). The second\n\
+                        argument is the method name (specifies the problem\n\
+                        or file).\n\
+=> map                  Triggers a sonification method using the current \n\
+                        data loaded into the session queue. The first \n\
+                        optional argument is the sonification mapping index.\n\
+=> mapfile              First runs a source command to load data from a file\n\
+                        into the session queue, then triggers a sonification\n\
+                        mapping. User can specify the file name and mapping\n\
+                        index as optional arguments.\n\
+=> queue                Prints the current session queue. The optional\n\
+                        argument "reset" clears the queue.\n\
+=> init                 Initializes a session in Realtime mode. The first\n\
+                        optional argument is the sonification type. The\n\
+                        second optional argument is the strategy type. The\n\
+                        third optional argument is the method name. The\n\
+                        fourth optional argument is the execution mode.\n\
+=> realtime, rt         Starts the sonification process in Realtime mode.\n\
+=> stop                 Stops all sounds.\n\
 => quit, q              Exits the program.\n '
 
 
