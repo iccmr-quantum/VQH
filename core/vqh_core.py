@@ -79,11 +79,11 @@ def wait_for_source_and_mapper(source: VQHSource, mapper: VQHMapper):
 
 class VQHCore:
 
-    def __init__(self, strategy_type, strategy_name, hwi_name, son_type, rt_mode_name='fixed', session_name="Default"):
+    def __init__(self, strategy_type, method_name, hwi_name, son_type, rt_mode_name='fixed', session_name="Default"):
         
         self.problem_event = Event()
         self.strategy_type = strategy_type
-        self.strategy_name = strategy_name
+        self.method_name = method_name
         self.rt_mode = REALTIME_MODES[rt_mode_name]
         self.session_name = session_name
         self.strategy = None
@@ -107,29 +107,29 @@ class VQHCore:
         config.PLATFORM = self.hardware_interface
 
 
-    def init_strategy(self, strategy_name=None):
+    def init_strategy(self, method_name=None):
 
         print("Initializing strategy")
         print(f"Strategy type: {self.strategy_type}")
         if self.strategy_type == "file":
-            if isinstance(self.strategy_name, type(None)):
+            if isinstance(self.method_name, type(None)):
                 return init_vqh_file_strategy(self.session_name)
 
             else:
                 try:
-                    file_number = int(self.strategy_name)
+                    file_number = int(self.method_name)
                 except ValueError as e:
                     print(e)
-                    print(f"File strategies require integer strategy names. Using 'None' instead.")
+                    print(f"File method names should be valid integers for accessing an existing data folder. Using 'None' instead, for latest experiment in the database.")
                     return init_vqh_file_strategy(self.session_name)
                 return init_vqh_file_strategy(self.session_name, file_number)
 
 
         elif self.strategy_type == "process":
-            if self.strategy_name not in PROCESS_LIBRARY.keys() or self.strategy_name in ['test', None]:
-                print(f"This strategy '{self.strategy_name}' does not exist (or is deprecated). Use qubo instead")
+            if self.method_name not in PROCESS_LIBRARY.keys() or self.method_name in ['test', None]:
+                print(f"This method '{self.method_name}' does not exist (or is deprecated). Use qubo instead")
                 raise ValueError
-            return init_vqh_process(self.strategy_name, 'h_setup_rt.csv', self.rt_mode, self.problem_event, self.session_name)
+            return init_vqh_process(self.method_name, 'h_setup_rt.csv', self.rt_mode, self.problem_event, self.session_name)
         
 
 
@@ -304,7 +304,7 @@ class VQHController:
         if change_type:
             self.core.strategy_type = change_type
         if change_name:
-            self.core.strategy_name = change_name
+            self.core.method_name = change_name
 
         self.rt_mode = 0
         self.reset_outlet()

@@ -128,12 +128,12 @@ def CLI(vqh_core, vqh_controller):
                     if x[2] == 'file':
                         print(f'Extra argument for file mode: {x[2]}. Ignoring...')
                     else:
-                        vqh_core.strategy_name = x[3]
+                        vqh_core.method_name = x[3]
                 if len(x) >= 5:
                     vqh_core.rt_mode = int(x[4])
                 print(f'Sonification type: {vqh_core.son_type}: {vqh_core.sonification_library._library[vqh_core.son_type]}')
                 print(f'Strategy type: {vqh_core.strategy_type}')
-                print(f'Strategy name: {vqh_core.strategy_name}')
+                print(f'Method name: {vqh_core.method_name}')
                 vqh_controller.init_core()
 
             # Generate sonification data manually from a quantum process
