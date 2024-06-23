@@ -38,7 +38,7 @@ import threading
 
 from control_to_setup2 import json_to_csv
 
-level = logging.DEBUG
+level = logging.WARNING
 
 fmt = logging.Formatter('[%(levelname)s]:%(name)s - %(message)s')
 handler = logging.StreamHandler()
@@ -222,9 +222,9 @@ Internal VQH functions:\n\
 
     p.add_argument('sessionpath', type=str, nargs='?', default='Session', help="Folder name where VQE data will be stored/read")
     p.add_argument('platform', type=str, nargs='?', default='local', help="Quantum Platform provider used (Local, IQM, IBMQ). Default is 'local'.")
-    p.add_argument('process', type=str, nargs='?', default='test', help="Process to be sonified. Default is 'test'.")
-    p.add_argument('process_mode', type=str, nargs='?', default='fixed', help="Process mode. Default is 'fixed'.")
-    p.add_argument('rt_son', type=int, nargs='?', default=9, help="Real-time sonification method. Default is 9.")
+    p.add_argument('method', type=str, nargs='?', default='qubo', help="Process method to be sonified, or file index to read from. Default is 'qubo'.")
+    p.add_argument('exec_mode', type=str, nargs='?', default='fixed', help="Source execution mode. Default is 'fixed'.")
+    p.add_argument('mapping', type=int, nargs='?', default=5, help="Sonification routine. Default is 5 (Raw OSC).")
     args = p.parse_args()
     logger.debug(args)
 
@@ -232,10 +232,10 @@ Internal VQH functions:\n\
     config.SESSIONPATH = args.sessionpath
     config.HW_INTERFACE = args.platform
 
-    if args.process_mode == 'file':
-        vqh_core = VQHCore('file', args.process, args.platform, args.rt_son, args.process_mode, args.sessionpath)
+    if args.exec_mode == 'file':
+        vqh_core = VQHCore('file', args.method, args.platform, args.mapping, args.exec_mode, args.sessionpath)
     else:
-        vqh_core = VQHCore('process', args.process, args.platform, args.rt_son, args.process_mode, args.sessionpath)
+        vqh_core = VQHCore('process', args.method, args.platform, args.mapping, args.exec_mode, args.sessionpath)
     vqh_controlller = VQHController(vqh_core)
 
 
