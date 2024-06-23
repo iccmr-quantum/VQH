@@ -1,4 +1,4 @@
-from core.vqh_source import VQHSource, VQHSourceStrategy, VQHFileStrategy, VQHProblem, VQHProtocol, VQHProcess
+from core.vqh_source import VQHSource, VQHSourceStrategy, VQHFileSource, VQHProblem, VQHProtocol, VQHProcess
 from core.vqh_mapper import VQHMapper, VQHMappingStrategy
 from core.vqh_process_test import ProcessTest, ProblemTest, ProtocolTest, MappingTest
 from problem.qubo import QUBOProblem
@@ -46,11 +46,11 @@ def init_vqh_process(name, filename, rt_mode, problem_event, sessioname) -> VQHP
     return process(problem(filename), algorithm(protocol()), rt_mode, problem_event, VQHDataFileManager(sessioname))
 
 
-def init_vqh_file_strategy(sessionname, filenumber=None) -> VQHFileStrategy:
+def init_vqh_file_strategy(sessionname, filenumber=None) -> VQHFileSource:
     if filenumber:
-        return VQHFileStrategy(VQHDataFileManager(sessionname), filenumber)
+        return VQHFileSource(VQHDataFileManager(sessionname), filenumber)
 
-    return VQHFileStrategy(VQHDataFileManager(sessionname))
+    return VQHFileSource(VQHDataFileManager(sessionname))
 
 def init_vqh_source(process: VQHProcess) -> VQHSource:
 

@@ -11,7 +11,7 @@ class VQHSourceStrategy(Protocol):
     def run(self, iteration_handler: Callable[[tuple[np.ndarray,...]], None], **kwargs) -> None:
         ...
 
-class VQHFileStrategy:
+class VQHFileSource:
     def __init__(self, filem: VQHDataFileManager, filenum=0) -> None:
         self.filenumber = filenum
         self.file_manager = filem
