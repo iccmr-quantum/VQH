@@ -1,0 +1,7 @@
+{
+    "sessionpath": "VQH_0_3_0",
+    "platform": "local",
+    "method": "qubo",
+    "exec_mode": "fixed",
+    "mapping": 5
+}
