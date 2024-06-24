@@ -38,7 +38,7 @@ import threading
 
 from control_to_setup2 import json_to_csv
 
-level = logging.WARNING
+level = logging.DEBUG
 
 fmt = logging.Formatter('[%(levelname)s]:%(name)s - %(message)s')
 handler = logging.StreamHandler()
@@ -54,7 +54,7 @@ last = False
 reset = True
 port = ''
 
-VALID_COMMANDS = ['q', 'quit', 'stop', 'map', 'mapfile', 'realtime', 'rt', 'init', 'source', 'queue']
+VALID_COMMANDS = ['q', 'quit', 'stop', 'map', 'mapfile', 'realtime', 'rt', 'init', 'source', 'queue', 'library']
 
 
 # Play sonification from a previously generated file
@@ -141,17 +141,22 @@ def CLI(vqh_core, vqh_controller):
             # Generate sonification data manually from a quantum process
             elif x[0] == 'source':
                 if len(x) == 1:
+                    # Uses the loaded preset
                     vqh_controller.run_source()
                 elif len(x) == 2:
+                    # Specifies the source strategy
                     vqh_controller.run_source(x[1])
                 elif len(x) == 3:
+                    # Specifies the source strategy and method
                     vqh_controller.run_source(x[1], x[2])
 
             # Sonify the last generated result
             elif x[0] == 'map':
                 if len(x) == 1:
+                    # Uses the loaded preset
                     vqh_controller.run_mapper()
                 elif len(x) == 2:
+                    # Specifies a new mapping
                     vqh_controller.run_mapper(int(x[1]))
 
             elif x[0] == 'mapfile':
@@ -170,6 +175,11 @@ def CLI(vqh_core, vqh_controller):
                     vqh_controller.print_queue()
                 elif len(x) == 2 and x[1] == 'reset':
                     vqh_controller.queue_reset()
+                elif len(x) == 2 and x[1] == 'length':
+                    vqh_controller.queue_length()
+
+            elif x[0] == 'library':
+                vqh_controller.print_library()
 
             else:
                 print(f'Not a valid input - {x}')
@@ -225,7 +235,18 @@ Internal VQH functions:\n\
     p.add_argument('method', type=str, nargs='?', default='qubo', help="Process method to be sonified, or file index to read from. Default is 'qubo'.")
     p.add_argument('exec_mode', type=str, nargs='?', default='fixed', help="Source execution mode. Default is 'fixed'.")
     p.add_argument('mapping', type=int, nargs='?', default=5, help="Sonification routine. Default is 5 (Raw OSC).")
+    p.add_argument('--config', type=str, help="Overwrite arguments with a configuration file.")
     args = p.parse_args()
+
+    if args.config:
+        print(f'Loading configuration file: {args.config}')
+        with open(args.config, 'r') as f:
+            configargs = json.load(f)
+
+        for key, value in configargs.items():
+            setattr(args, key, value)
+
+
     logger.debug(args)
 
 

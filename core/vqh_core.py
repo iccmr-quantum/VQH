@@ -356,6 +356,15 @@ class VQHController:
     def queue_reset(self):
         self.core.queue.queue.clear()
 
+    def queue_length(self):
+        print(f"Queue length: {len(self.core.queue.queue)}")
+
+    def print_library(self):
+        #print("Hardware Library: ", self.core.hardware_library)
+        print("Sonification Library:")
+        for key, value in self.core.sonification_library._library.items():
+            print(f"{key} => {value['description']} ({value['interface'].upper()})")
+
     def clean(self):
         print("Cleaning VQHController")
         
