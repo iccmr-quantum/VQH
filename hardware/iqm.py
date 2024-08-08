@@ -1,6 +1,7 @@
 from core.vqh_interfaces import QuantumHardwareInterface
 from iqm.qiskit_iqm import IQMProvider
-from qiskit import execute
+#from qiskit import execute
+from qiskit.primitives import BackendSampler
 #from qiskit_ibm_provider import IBMProvider
 
 server_url = 'https://demo.qc.iqm.fi/cocos'
@@ -18,7 +19,9 @@ class IQMHardwareInterface(QuantumHardwareInterface):
         self.backend = self.provider.get_backend()
 
     def execute(self, qcirc, shots=1024):
-        job = execute(qcirc, backend=self.backend, shots=shots, memory=True)
+        #job = execute(qcirc, backend=self.backend, shots=shots, memory=True)
+        sampler = BackendSampler(self.backend)
+        job = sampler.run(qcirc, shots=shots)
         return job
     
     def optimize(self, qcirc):
