@@ -207,8 +207,8 @@ Internal VQH functions:\n\
 => source               Generates sonification data from a problem - or.\n\
                         reads data from a file. The first optional argument\n\
                         is the strategy type (file or process). The second\n\
-                        argument is the method name (specifies the problem\n\
-                        or file).\n\
+                        optional argument is the method name (specifies the\n\
+                        problem or file).\n\
 => map                  Triggers a sonification method using the current \n\
                         data loaded into the session queue. The first \n\
                         optional argument is the sonification mapping index.\n\
@@ -218,10 +218,13 @@ Internal VQH functions:\n\
                         index as optional arguments.\n\
 => queue                Prints the current session queue. The optional\n\
                         argument "reset" clears the queue.\n\
-=> init                 Initializes a session in Realtime mode. The first\n\
-                        optional argument is the sonification type. The\n\
-                        second optional argument is the strategy type. The\n\
-                        third optional argument is the method name. The\n\
+=> library              Prints the Sonification Library, e.g. the available\n\
+                        sonification methods, their respective indexes and\n\
+                        synth engines or interfaces.\n\
+=> init                 Initializes a session in Realtime (segmented) mode.\n\
+                        The first optional argument is the sonification type.\n\
+                        The second optional argument is the strategy type.\n\
+                        The third optional argument is the method name. The\n\
                         fourth optional argument is the execution mode.\n\
 => realtime, rt         Starts the sonification process in Realtime mode.\n\
 => stop                 Stops all sounds.\n\
@@ -235,7 +238,7 @@ Internal VQH functions:\n\
     p.add_argument('method', type=str, nargs='?', default='qubo', help="Process method to be sonified, or file index to read from. Default is 'qubo'.")
     p.add_argument('exec_mode', type=str, nargs='?', default='fixed', help="Source execution mode. Default is 'fixed'.")
     p.add_argument('mapping', type=int, nargs='?', default=5, help="Sonification routine. Default is 5 (Raw OSC).")
-    p.add_argument('--config', type=str, help="Overwrite arguments with a configuration file.")
+    p.add_argument('--config', type=str, help="Overwrites arguments above with a configuration '<name>.vqhpreset' file.")
     args = p.parse_args()
 
     if args.config:
