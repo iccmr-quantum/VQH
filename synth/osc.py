@@ -12,9 +12,16 @@ class OSCMapping(MappingInterface):
 
     def publish_data(self, data, **kwargs):
         print(f'Publishing data: {data}')
-        serialized_data = json.dumps(data)
+        #serialized_data = json.dumps(data[0][0].tolist())
+        serialized_data = [(i, item[1]) for i, item in enumerate(data[0][0].items())]
+        print(f'Serialized data: {serialized_data}')
+
         self.client.send_message("/vqh/expval", data[1])
-        self.client.send_message("/vqh/mprob", serialized_data)
+        print(f'Published expval: {data[1]}')
+        print(f'Published mprob: {serialized_data}')
+        for prob in serialized_data:
+            self.client.send_message(f"/vqh/mprob/{prob[0]}", prob[1])
+            #print(f'Published {prob[0]}: {prob[1]}')
 
     def update_client(self, ip:str, port:int):
         self.client = SimpleUDPClient(ip, port)
