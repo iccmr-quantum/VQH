@@ -34,12 +34,12 @@ class SonificationLibrary():
                 "mapping": "note_cluster_intensity_rt"
             },
             5: {
-                "description": "Gereral OSC Mapping",
+                "description": "General OSC Mapping",
                 "interface": "osc",
                 "mapping": "publish_data"
             },
             6: {
-                "description": "Gerenal Additive Synthesis",
+                "description": "General Additive Synthesis",
                 "interface": "sc",
                 "mapping": "note_loudness_rt"
             },
