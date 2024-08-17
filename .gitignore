@@ -31,3 +31,4 @@ cligui_test*
 music21test.py
 scoretest*
 Syd/
+.DS_Store
