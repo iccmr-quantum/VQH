@@ -239,6 +239,7 @@ Internal VQH functions:\n\
     p.add_argument('exec_mode', type=str, nargs='?', default='fixed', help="Source execution mode. Default is 'fixed'.")
     p.add_argument('mapping', type=int, nargs='?', default=5, help="Sonification routine. Default is 5 (Raw OSC).")
     p.add_argument('--config', type=str, help="Overwrites arguments above with a configuration '<name>.vqhpreset' file.")
+    p.add_argument('--eco_mode', type=bool, default=False, help="Save The CPU File I/O planet! Uses less trees.")
     args = p.parse_args()
 
     if args.config:
@@ -262,6 +263,15 @@ Internal VQH functions:\n\
         vqh_core = VQHCore('process', args.method, args.platform, args.mapping, args.exec_mode, args.sessionpath)
     vqh_controlller = VQHController(vqh_core)
 
+    # Run CLI
+    pquit = multiprocessing.Value('b', False)
+    if not args.eco_mode:
+        qubo_vis = multiprocessing.Process(target=update_qubo_visualization, args=(pquit,))
+        qubo_vis.start()
+        print('(Eco mode is off)')
+    else:
+        print('(Eco mode is on)')
+
 
     print('=====================================================')
     print('      VQH: Variational Quantum Harmonizer  - v0.3.0  ')
@@ -273,10 +283,6 @@ Internal VQH functions:\n\
     print('         https://github.com/iccmr-quantum/VQH        ')
     print('=====================================================')
 
-    # Run CLI
-    pquit = multiprocessing.Value('b', False)
-    qubo_vis = multiprocessing.Process(target=update_qubo_visualization, args=(pquit,))
-    qubo_vis.start()
 
     CLI(vqh_core, vqh_controlller)
     pquit.value = True

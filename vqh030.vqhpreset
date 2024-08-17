@@ -3,5 +3,6 @@
     "platform": "local",
     "method": "qubo",
     "exec_mode": "fixed",
-    "mapping": 5
+    "mapping": 5,
+    "eco_mode": "False"
 }
