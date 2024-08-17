@@ -1,7 +1,7 @@
 from core.vqh_interfaces import QuantumHardwareInterface
 from hardware.local import LocalSimulatorInterface
 from hardware.local1 import LocalSimulatorInterface1
-from hardware.iqm import IQMHardwareInterface, IQMRealHardwareInterface
+#from hardware.iqm import IQMHardwareInterface, IQMRealHardwareInterface
 from hardware.ibm import IBMQHardwareInterface
 
 class HardwareLibrary():
@@ -10,8 +10,6 @@ class HardwareLibrary():
             "local": LocalSimulatorInterface, 
             "aer": LocalSimulatorInterface, 
             "local1": LocalSimulatorInterface1,
-            "iqm": IQMHardwareInterface,
-            "iqm_real": IQMRealHardwareInterface,
             "ibm": IBMQHardwareInterface,
         }
     def get_hardware_interface(self, interface_name: str) -> QuantumHardwareInterface:

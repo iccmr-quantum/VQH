@@ -1,9 +1,9 @@
 from core.vqh_interfaces import QuantumHardwareInterface
-#from qiskit_aer import AerProvider
-#from qiskit.transpiler.preset_passmanagers import generate_preset_pass_manager
+from qiskit_aer import AerProvider
+from qiskit.transpiler.preset_passmanagers import generate_preset_pass_manager
 
-"""
-class LocalSimulatorInterface(QuantumHardwareInterface):
+
+class LocalSimulatorInterface1(QuantumHardwareInterface):
     def __init__(self):
         self.provider = None
         self.backend = None
@@ -24,19 +24,19 @@ class LocalSimulatorInterface(QuantumHardwareInterface):
     
     def optimize(self, qcirc):
         pass
-"""
-class LocalSimulatorInterface1(QuantumHardwareInterface):
-    def __init__(self):
-        self.name = 'local'
 
-    def connect(self):
-        pass
+# class LocalSimulatorInterface1(QuantumHardwareInterface):
+#     def __init__(self):
+#         self.name = 'local'
 
-    def get_backend(self, backend_name="aer_simulator"):
-        pass
+#     def connect(self):
+#         pass
 
-    def execute(self, qcirc, shots=1024):
-        pass
+#     def get_backend(self, backend_name="aer_simulator"):
+#         pass
+
+#     def execute(self, qcirc, shots=1024):
+#         pass
     
-    def optimize(self, qcirc):
-        pass
+#     def optimize(self, qcirc):
+#         pass
