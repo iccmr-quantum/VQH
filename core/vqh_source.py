@@ -48,9 +48,9 @@ class VQHProblem(Protocol):
         ...
 
 class VQHProtocol(Protocol):
-    def encode(self, problem: VQHProblem) -> Any:
+    def encode(self, problem: VQHProblem) -> Any: # 'Any' means a list of instances of the problem
         ...
-    def decode(self, data: Any) -> np.ndarray:
+    def decode(self, data: Any) -> np.ndarray: # Any means a probability distribution
         ...
 
 class VQHAlgorithm(Protocol):
