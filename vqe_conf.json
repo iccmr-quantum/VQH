@@ -3,10 +3,9 @@
     "entanglement": "linear",
     "optimizer_name": "COBYLA",
     "sequence_length": 1,
-    "size": 12,
-    "description": "VQH Chapter",
+    "size": 4,
+    "description": "VQH Conf Example",
     "iterations": [
-        200
-    ],
-    "nextpathid": 68
+        64
+    ]
 }
