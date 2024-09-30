@@ -108,9 +108,10 @@ MIDIIn.connectAll;
 
 		var scaledVal = minRange + (val * (maxRange - minRange) / 127).round(0.01);  // Scale the value
 		var data = ~readQUBO.value;
+		key.postln;
 		// scaledVal.postln;  // Post current state
 		data[key][key] = scaledVal;
-		// data[key].postln;
+		data[key].postln;
 		~writeQUBO.(data);  // Write changes back to JSON
 
     }
@@ -161,32 +162,35 @@ MIDIIn.connectAll;
 };
 
 
+~label = "s";
+
+
 ~clock_speed_handler = ~createSlideHandler.(\clock_speed, 0.05, 1.0);
 ~endButtonUp = ~createButtonHandler.(\end, false, 0);
 ~endButtonDown = ~createButtonHandler.(\end, true, 127);
 ~nextButton = ~createButtonHandler.(\next_problem, true, 127);
-~quboSlider = ~createQUBOSiderHandler.(\s1, -1.0, 1.0);
-~quboSlider2 = ~createQUBOSiderHandler.(\s2, -1.0, 1.0);
-~quboSlider3 = ~createQUBOSiderHandler.(\s3, -1.0, 1.0);
-~quboSlider4 = ~createQUBOSiderHandler.(\s4, -1.0, 1.0);
-~quboCoupling12 = ~createCouplingSliderHandler.(\s1, \s2, -1.0, 1.0);
-~quboCoupling13 = ~createCouplingSliderHandler.(\s1, \s3, -1.0, 1.0);
-~quboCoupling14 = ~createCouplingSliderHandler.(\s1, \s4, -1.0, 1.0);
-~quboCoupling23 = ~createCouplingSliderHandler.(\s2, \s3, -1.0, 1.0);
-~quboCoupling24 = ~createCouplingSliderHandler.(\s2, \s4, -1.0, 1.0);
-~quboCoupling34 = ~createCouplingSliderHandler.(\s3, \s4, -1.0, 1.0);
+~quboSlider = ~createQUBOSiderHandler.((~label++"1").asSymbol, -1.0, 1.0);
+~quboSlider2 = ~createQUBOSiderHandler.((~label++"2").asSymbol, -1.0, 1.0);
+~quboSlider3 = ~createQUBOSiderHandler.((~label++"3").asSymbol, -1.0, 1.0);
+~quboSlider4 = ~createQUBOSiderHandler.((~label++"4").asSymbol, -1.0, 1.0);
+~quboCoupling12 = ~createCouplingSliderHandler.((~label++"1").asSymbol, (~label++"2").asSymbol, -1.0, 1.0);
+~quboCoupling13 = ~createCouplingSliderHandler.((~label++"1").asSymbol, (~label++"3").asSymbol, -1.0, 1.0);
+~quboCoupling14 = ~createCouplingSliderHandler.((~label++"1").asSymbol, (~label++"4").asSymbol, -1.0, 1.0);
+~quboCoupling23 = ~createCouplingSliderHandler.((~label++"2").asSymbol, (~label++"3").asSymbol, -1.0, 1.0);
+~quboCoupling24 = ~createCouplingSliderHandler.((~label++"2").asSymbol, (~label++"4").asSymbol, -1.0, 1.0);
+~quboCoupling34 = ~createCouplingSliderHandler.((~label++"3").asSymbol, (~label++"4").asSymbol, -1.0, 1.0);
 
-~quboFlipper1 = ~createQUBOFlipperButton.(\s1);
-~quboFlipper2 = ~createQUBOFlipperButton.(\s2);
-~quboFlipper3 = ~createQUBOFlipperButton.(\s3);
-~quboFlipper4 = ~createQUBOFlipperButton.(\s4);
+~quboFlipper1 = ~createQUBOFlipperButton.((~label++"1").asSymbol);
+~quboFlipper2 = ~createQUBOFlipperButton.((~label++"2").asSymbol);
+~quboFlipper3 = ~createQUBOFlipperButton.((~label++"3").asSymbol);
+~quboFlipper4 = ~createQUBOFlipperButton.((~label++"4").asSymbol);
 
-~quboFlipper12 = ~createQUBOFlipperCoupling.(\s1, \s2);
-~quboFlipper13 = ~createQUBOFlipperCoupling.(\s1, \s3);
-~quboFlipper14 = ~createQUBOFlipperCoupling.(\s1, \s4);
-~quboFlipper23 = ~createQUBOFlipperCoupling.(\s2, \s3);
-~quboFlipper24 = ~createQUBOFlipperCoupling.(\s2, \s4);
-~quboFlipper34 = ~createQUBOFlipperCoupling.(\s3, \s4);
+~quboFlipper12 = ~createQUBOFlipperCoupling.((~label++"1").asSymbol, (~label++"2").asSymbol);
+~quboFlipper13 = ~createQUBOFlipperCoupling.((~label++"1").asSymbol, (~label++"3").asSymbol);
+~quboFlipper14 = ~createQUBOFlipperCoupling.((~label++"1").asSymbol, (~label++"4").asSymbol);
+~quboFlipper23 = ~createQUBOFlipperCoupling.((~label++"2").asSymbol, (~label++"3").asSymbol);
+~quboFlipper24 = ~createQUBOFlipperCoupling.((~label++"2").asSymbol, (~label++"4").asSymbol);
+~quboFlipper34 = ~createQUBOFlipperCoupling.((~label++"3").asSymbol, (~label++"4").asSymbol);
 )
 
 a = MIDIFunc.cc({arg ...args; args.postln});
@@ -270,10 +274,14 @@ var process;
 
 )
 
+~data = ~readQUBO.value;
+~data["s4".asSymbol]
+~data
 
-
-
-
+~label = "s"
+~label++'3'
+~quboSliderTest = ~createQUBOSiderHandler.((~label++"4").asSymbol, -1.0, 1.0);
+~quboSliderTest.value(60)
 
 
 

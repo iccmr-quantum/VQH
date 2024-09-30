@@ -13,7 +13,7 @@ class OSCMapping(MappingInterface):
     def publish_data(self, data, **kwargs):
         print(f'Publishing data: {data}')
         #serialized_data = json.dumps(data[0][0].tolist())
-        serialized_data = [(i, item[1]) for i, item in enumerate(data[0][0].items())]
+        serialized_data = [(item[0], item[1]) for i, item in enumerate(data[0][0].items())]
         print(f'Serialized data: {serialized_data}')
 
         self.client.send_message("/vqh/expval", data[1])

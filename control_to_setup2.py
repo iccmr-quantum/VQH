@@ -13,12 +13,14 @@ def json_to_csv(json_fp, csv_fp):
 
     mapping_dict = {True: '', False: ' '}
     #main_order = ['c', 'e', 'g', 'b']
-    main_order = ['s1', 's2', 's3', 's4']
-    key_names = {'s1': 'c', 's2': 'e', 's3': 'g', 's4': 'b'}
-    sub_order = main_order
-    ordered_data = {key_names[k]: {key_names[sk]: data[k][sk] for sk in sub_order} for k in main_order}
+    #main_order = ['s1', 's2', 's3', 's4']
+    #key_names = {'s1': 'c', 's2': 'e', 's3': 'g', 's4': 'b'}
+    #sub_order = main_order
+    #ordered_data = {key_names[k]: {key_names[sk]: data[k][sk] for sk in sub_order} for k in main_order}
 
-    data = ordered_data
+    #data = ordered_data
+    #Label names need to be sortable according to the matrix order
+    data = dict(sorted(data.items()))
 
     with open(csv_fp, 'w', newline='') as file:
         csv_writer = csv.writer(file)
