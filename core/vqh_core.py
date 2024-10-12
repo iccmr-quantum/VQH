@@ -250,8 +250,8 @@ class VQHController:
                     if self.core.source.strategy.busy:
                         print("Source is busy. Don't overload me!")
                         continue
-                    #json_to_csv('midi/qubo_control.json', 'h_setup_rt.csv')
-                    #sleep(0.05)
+                    json_to_csv('midi/qubo_control.json', 'h_setup_rt.csv')
+                    sleep(0.05)
                     self.outlet.bang({"qubos": "h_setup_rt.csv"})
                     self.core.problem_event.set()
                     rt_config["next_problem"] = False

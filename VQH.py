@@ -135,6 +135,12 @@ def CLI(vqh_core, vqh_controller):
                     vqh_core.rt_mode = int(x[4])
                 print(f'Sonification type: {vqh_core.son_type}: {vqh_core.sonification_library._library[vqh_core.son_type]["description"]} ({vqh_core.sonification_library._library[vqh_core.son_type]["interface"].upper()})')
                 print(f'Strategy type: {vqh_core.strategy_type}')
+                if vqh_core.strategy_type == 'process':
+                    print(f'Running JSON to CSV once...')
+                    try:
+                        json_to_csv('midi/qubo_control.json', 'h_setup_rt.csv')
+                    except Exception as e:
+                        print(f'Error converting JSON to CSV: {e}')
                 print(f'Method name: {vqh_core.method_name}')
                 vqh_controller.init_core()
 
