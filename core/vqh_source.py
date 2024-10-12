@@ -155,9 +155,9 @@ class VQHProcess:
 
             print(f'Waiting for New Problem...')
 
+            self.busy = False
             self.problem_event.wait()
             self.problem_event.clear()
-            self.busy = False
             with open(self.statuspath, 'w') as f:
                 json.dump({'busy': self.busy}, f)
             self.dataset.clear()
