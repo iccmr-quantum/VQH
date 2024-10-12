@@ -17,6 +17,7 @@ class VQHFileSource:
         self.file_manager = filem
         self.type = 'file'
         self.problem = None
+        self.busy = False
 
     def run_latest(self, iteration_handler: Callable[[tuple[np.ndarray,...]], None]) -> None:
         dataset = self.file_manager.read(self.file_manager.latest_index)
