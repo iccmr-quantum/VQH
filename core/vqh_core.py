@@ -247,6 +247,9 @@ class VQHController:
                     sys.exit(0)
                     break
                 if rt_config["next_problem"]:
+                    if self.core.source.busy:
+                        print("Source is busy. Don't overload me!")
+                        continue
                     #json_to_csv('midi/qubo_control.json', 'h_setup_rt.csv')
                     #sleep(0.05)
                     self.outlet.bang({"qubos": "h_setup_rt.csv"})

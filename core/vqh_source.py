@@ -81,6 +81,8 @@ class VQHProcess:
         self.dataset = VQHDataSet()
         self.type = 'process'
         self.file_manager = filem
+        self.statuspath = 'source_status.json'
+        self.busy = False
 
         self._active = True
 
@@ -135,6 +137,9 @@ class VQHProcess:
         while self.active:
 
             print(f'Next Segment: #{count}')
+            self.busy = True
+            with open(self.statuspath, 'w') as f:
+                json.dump({'busy': self.busy}, f)
 
             # Prepare the algorithm
             algorithm_params = self.algorithm.prepare(self.problem, count)
@@ -151,6 +156,9 @@ class VQHProcess:
 
             self.problem_event.wait()
             self.problem_event.clear()
+            self.busy = False
+            with open(self.statuspath, 'w') as f:
+                json.dump({'busy': self.busy}, f)
             self.dataset.clear()
 
             count += 1
