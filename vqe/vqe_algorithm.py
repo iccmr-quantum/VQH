@@ -6,7 +6,7 @@ import json
 
 from vqe.vqe_experiments import SamplingVQE
 from qiskit.circuit.library import EfficientSU2
-from qiskit.algorithms.optimizers import COBYLA, NFT, SPSA, TNC, SLSQP, ADAM
+from qiskit_algorithms.optimizers import COBYLA, NFT, SPSA, TNC, SLSQP, ADAM
 
 from threading import Lock
 
@@ -36,14 +36,18 @@ class VQEAlgorithm:
 
         return optimizer
 
-    def iteration_callback(self, sample, exp_value, handler):
+    def iteration_callback(self, sample, exp_value, mls, handler):
     
 
         amps = self.protocol.decode(([sample], self.variables_index))
+        #print(sample)
         #print(amps)
         #for handler in handlers:
         #    handler((amps, exp_value))
-        handler((amps, exp_value))
+        if mls is None:
+            handler((amps, exp_value))
+        else:
+            handler((amps, exp_value, mls))
 
     def init_point(self):
         if self.num_parameters == 0:
@@ -67,11 +71,14 @@ class VQEAlgorithm:
         ansatz = EfficientSU2(num_qubits=len(self.variables_index), reps=kwargs['reps'], entanglement=kwargs['entanglement'])
 
         self.num_parameters = ansatz.num_parameters
+        
+        son_mode = kwargs['son_mode']
 
         algorithm_params = {
             'ansatz': ansatz,
             'operator': operator,
-            'optimizer': optimizer
+            'optimizer': optimizer,
+            'son_mode': son_mode
         }
 
         return algorithm_params
@@ -79,7 +86,7 @@ class VQEAlgorithm:
     def run_algorithm(self, initial_point, iteration_handler, **algorithm_params):
 
         ansatz_temp = copy.deepcopy(algorithm_params['ansatz'])
-        vqe_experiment = SamplingVQE()
+        vqe_experiment = SamplingVQE(algorithm_params['son_mode'])
         result, binary_probabilities, expectation_values = vqe_experiment.run_vqe(
                 ansatz_temp, algorithm_params['operator'], algorithm_params['optimizer'], initial_point, callback=(self.iteration_callback, iteration_handler))
 
