@@ -1,4 +1,4 @@
-from qiskit-algorithms import VQE
+from qiskit_algorithms import VQE
 #from qiskit.algorithms.minimum_eigensolvers import VQE
 from qiskit.primitives import Estimator, Sampler
 from qiskit.circuit.library import EfficientSU2
