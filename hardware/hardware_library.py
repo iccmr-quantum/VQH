@@ -7,7 +7,6 @@ from hardware.ibm import IBMQHardwareInterface
 class HardwareLibrary():
     def __init__(self):
         self._qh_interfaces = {
-            "local": LocalSimulatorInterface, 
             "aer": LocalSimulatorInterface, 
             "local1": LocalSimulatorInterface1,
             "ibm": IBMQHardwareInterface,
