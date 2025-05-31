@@ -1,6 +1,6 @@
 from qiskit.quantum_info import SparsePauliOp
-from qiskit.opflow.primitive_ops import PauliSumOp
-from qiskit.opflow import I, X, Z, Y
+#from qiskit.opflow.primitive_ops import PauliSumOp
+#from qiskit.opflow import I, X, Z, Y
 import numpy as np
 from threading import Lock
 
@@ -84,7 +84,7 @@ class BasisProtocol:
         for i in range(num_qubits):
             paulix = 'I'*i + 'X' + 'I'*(num_qubits-i-1)
             pauli_list.append((paulix, external_field))
-        operator = PauliSumOp(SparsePauliOp.from_list(pauli_list))
+        operator = SparsePauliOp.from_list(pauli_list)
         offset = -const/4 # for future reference
         print(f'Operator: \n{operator}')
          
