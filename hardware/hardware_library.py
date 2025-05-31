@@ -1,5 +1,5 @@
 from core.vqh_interfaces import QuantumHardwareInterface
-from hardware.local import LocalSimulatorInterface
+#from hardware.local import LocalSimulatorInterface
 from hardware.local1 import LocalSimulatorInterface1
 #from hardware.iqm import IQMHardwareInterface, IQMRealHardwareInterface
 from hardware.ibm import IBMQHardwareInterface
