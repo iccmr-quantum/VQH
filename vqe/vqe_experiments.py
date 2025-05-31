@@ -1,4 +1,5 @@
-from qiskit.algorithms.minimum_eigensolvers import VQE
+from qiskit-algorithms import VQE
+#from qiskit.algorithms.minimum_eigensolvers import VQE
 from qiskit.primitives import Estimator, Sampler
 from qiskit.circuit.library import EfficientSU2
 from qiskit_optimization import QuadraticProgram
@@ -42,8 +43,8 @@ global PATH
 class SamplingVQE():
 
 
-    def __init__(self):
-        pass
+    def __init__(self, mode='marg_dist'):
+        self.mode = mode
 
 
     def run_vqe(self, ansatz, operator, optimizer, initial_point, callback=None):
@@ -67,11 +68,17 @@ class SamplingVQE():
             # The statevector and expectation values are collected at each iteration
             # for sonification
             binary_probabilities.append(sample_binary_probabilities)
+            most_likely_state = max(sample_binary_probabilities, key=sample_binary_probabilities.get)
             expectation_values.append(expectation_value)
+            #max(binary_probability, key=binary_probability.get)
             # DECODE SAMPLE HERE?
             if callback:
                 # Broadcast decoded sample
-                callback[0](sample_binary_probabilities, expectation_value, callback[1])
+                if self.mode == 'marg_dist':
+                    callback[0](sample_binary_probabilities, expectation_value, most_likely_state, callback[1])
+                elif self.mode == 'params':
+                    callback[0](params, expectation_value, None, callback[1])
+
             return expectation_value
 
         print(f'Hardware Interface: {config.PLATFORM}')
