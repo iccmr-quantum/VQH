@@ -3,11 +3,9 @@ from qiskit_algorithms import VQE
 from qiskit.primitives import Estimator, Sampler
 from qiskit.circuit.library import EfficientSU2
 from qiskit_optimization import QuadraticProgram
-from qiskit.algorithms.optimizers import COBYLA, NFT, SPSA, TNC, SLSQP
-from qiskit.algorithms.minimum_eigensolvers import NumPyMinimumEigensolver
+from qiskit_algorithms.optimizers import COBYLA, NFT, SPSA, TNC, SLSQP
+from qiskit_algorithms.minimum_eigensolvers import NumPyMinimumEigensolver
 from qiskit.quantum_info import SparsePauliOp
-from qiskit.opflow.primitive_ops import PauliSumOp
-from qiskit.opflow import X, Z, I, Y
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 from matplotlib.colors import ListedColormap, LinearSegmentedColormap
