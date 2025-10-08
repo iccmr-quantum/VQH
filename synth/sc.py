@@ -113,6 +113,26 @@ class SuperColliderMapping(MappingInterface):
             print(f"{k}:{amp:.1f},", end="")
         print(")", end="\r")
 
+    def note_grains_rt(self, data, **kwargs):
+        grainparams = data[0]
+        energy = data[1]
+
+        ng = len(grainparams[0])
+
+        if not self.rt_synth:
+            initial_energy = 1
+            initial_params = np.zeros(ng)
+            self.rt_synth = []
+            self.rt_synth.append(Synth(self.server, "vqgrains2", {"rate":initial_energy}))
+
+
+        for i, (k, amp) in enumerate(grainparams[0].items()):
+            self.rt_synth[0].set(k, amp)
+
+        #self.rt_synth[0].set("ratemul", grainparams[0]["s1"])
+        self.rt_synth[0].set("pos2", energy)
+
+        print(f"Grain params: {grainparams}")
 
     # TODO: Remove dependency on global variables
     def note_cluster_intensity_rt(self, data, **kwargs):
@@ -128,7 +148,9 @@ class SuperColliderMapping(MappingInterface):
         print(f" shifted value: {(expect_values - (-32))/100}")
         shifted_value = (expect_values - (-32))/400
         for i, (k, amp) in enumerate(sorted_state.items()):
-            sy = Synth(self.server, "vqe_son2_rt", {"note": FREQDICT[k], "amp":amp})
+            note = self.scale.get_note(i)
+            print(note)
+            sy = Synth(self.server, "vqe_son2_rt", {"note": note, "amp":amp})
             # sy = Synth(server, "vqe_son2", {"note": FREQDICT[k]+expect_values[v]-3, "amp":amp})
             time.sleep(0.004+shifted_value)
         #time.sleep(0.2)

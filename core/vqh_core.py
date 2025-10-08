@@ -2,7 +2,10 @@ from core.vqh_source import VQHSource, VQHSourceStrategy, VQHFileSource, VQHProb
 from core.vqh_mapper import VQHMapper, VQHMappingStrategy
 from core.vqh_process_test import ProcessTest, ProblemTest, ProtocolTest, MappingTest
 from problem.qubo import QUBOProblem
+from control.osc_qubo import OSCQUBOController
+from control.segmented import RTController
 from protocols.basis import BasisProtocol
+from protocols.params import ParamsProtocol
 from vqe.vqe_algorithm import VQEAlgorithm
 from time import sleep
 from threading import Thread, Event
@@ -29,7 +32,8 @@ from control_to_setup2 import json_to_csv
 
 PROCESS_LIBRARY = {
         "test": (ProcessTest, ProblemTest, ProtocolTest), #Deprecated
-        "qubo": (VQHProcess, VQEAlgorithm, QUBOProblem, BasisProtocol)
+        "qubo": (VQHProcess, VQEAlgorithm, QUBOProblem, BasisProtocol),
+        "qubo_params": (VQHProcess, VQEAlgorithm, QUBOProblem, ParamsProtocol)
 }
 
 
@@ -40,10 +44,13 @@ REALTIME_MODES = {
         'file': 3
 }
 
-def init_vqh_process(name, filename, rt_mode, problem_event, sessioname) -> VQHProcess:
+def init_vqh_process(name, filename, rt_mode, problem_event, sessioname, qubo_source='csv') -> VQHProcess:
     
     process, algorithm, problem, protocol = PROCESS_LIBRARY[name]
-    return process(problem(filename), algorithm(protocol()), rt_mode, problem_event, VQHDataFileManager(sessioname))
+
+    problem_instance = problem(filename, source_type=qubo_source, rt_mode=rt_mode)
+
+    return process(problem_instance, algorithm(protocol()), rt_mode, problem_event, VQHDataFileManager(sessioname))
 
 
 def init_vqh_file_strategy(sessionname, filenumber=None) -> VQHFileSource:
@@ -79,7 +86,7 @@ def wait_for_source_and_mapper(source: VQHSource, mapper: VQHMapper):
 
 class VQHCore:
 
-    def __init__(self, strategy_type, method_name, hwi_name, son_type, rt_mode_name='fixed', session_name="Default"):
+    def __init__(self, strategy_type, method_name, hwi_name, son_type, rt_mode_name='fixed', session_name="Default", qubo_source='csv', qubo_file='h_setup_rt.csv'):
         
         self.problem_event = Event()
         self.strategy_type = strategy_type
@@ -88,6 +95,11 @@ class VQHCore:
         self.session_name = session_name
         self.strategy = None
         self.queue = Queue()
+        
+        self.qubo_source = qubo_source
+        self.qubo_file = qubo_file
+        self.osc_controller = None
+        self.rt_seg_osc_controller = None
 
         self.hardware_library = HardwareLibrary()
         self.sonification_library = SonificationLibrary()
@@ -129,7 +141,22 @@ class VQHCore:
             if self.method_name not in PROCESS_LIBRARY.keys() or self.method_name in ['test', None]:
                 print(f"This method '{self.method_name}' does not exist (or is deprecated). Use qubo instead")
                 raise ValueError
-            return init_vqh_process(self.method_name, 'h_setup_rt.csv', self.rt_mode, self.problem_event, self.session_name)
+            
+            v_process = init_vqh_process(self.method_name, self.qubo_file, self.rt_mode, self.problem_event, self.session_name, self.qubo_source)
+
+
+            if self.qubo_source == 'osc':
+                self.osc_controller = OSCQUBOController(v_process.problem, vqh_controller=self)
+                self.osc_controller.start()
+                print("OSC Controller started")
+                self.rt_seg_osc_controller = RTController(parent_core=self)
+                self.rt_seg_osc_controller.start()
+
+            return v_process
+
+
+
+            #return init_vqh_process(self.method_name, 'h_setup_rt.csv', self.rt_mode, self.problem_event, self.session_name)
         
 
 
@@ -179,8 +206,14 @@ class VQHController:
 
     def update_qubos(self, csv_file):
 
-        json_to_csv('midi/qubo_control.json', csv_file)
-        self.outlet.bang({"qubos": csv_file})
+        if self.core.qubo_source == 'json':
+            json_to_csv('midi/qubo_control.json', csv_file)
+            self.outlet.bang({"qubos": csv_file})
+        elif self.core.qubo_source == 'osc':
+            print("QUBO source is OSC. Ignoring qubo update from file")
+            pass
+        else:
+            self.outlet.bang({"qubos": csv_file})
 
     def update_realtime(self, thread=None):
         print(f"Realtime mode: {self.rt_mode}")
@@ -198,10 +231,11 @@ class VQHController:
             for inlet in self.outlet.inlets.values():
                 try:
                     getattr(self, f"update_{inlet.name}")(rt_config[inlet.name])
-                    print(f"Updated {inlet.name}")
+                    #print(f"Updated {inlet.name}")
                 except Exception as e:
-                    print(f"Skipping {inlet.name} update")
-                    print(e)
+                    pass
+                    #print(f"Skipping {inlet.name} update")
+                    #print(e)
 
             return
 
@@ -215,10 +249,11 @@ class VQHController:
                 for inlet in self.outlet.inlets.values():
                     try:
                         getattr(self, f"update_{inlet.name}")(rt_config[inlet.name])
-                        print(f"Updated {inlet.name}")
+                        #print(f"Updated {inlet.name}")
                     except Exception as e:
-                        print(f"Skipping {inlet.name} update")
-                        print(e)
+                        pass
+                        #print(f"Skipping {inlet.name} update")
+                        #print(e)
                 sleep(1)
             return
 
@@ -234,7 +269,7 @@ class VQHController:
                         self.outlet.bang({"current_scale": rt_config['scale']})
                         self.current_state["scale"] = rt_config['scale']
                 except Exception as e:
-                    print('Synth not ready yet. skipping scale update')
+                    #print('Synth not ready yet. skipping scale update')
                     continue
 
                 if rt_config["clock_speed"] != self.core.mapper.clock_speed:
@@ -349,6 +384,30 @@ class VQHController:
         self.core.mapper.thread.start()
         self.updater.start()
 
+    def run_mapper2(self, change_son=None):
+        if change_son:
+            self.core.son_type = change_son
+
+        
+
+        self.rt_mode = 0
+        self.reset_outlet()
+
+        self.core.mapper = self.core.init_mapper()
+        if self.core.queue is None or self.core.queue.empty():
+            print("Queue is empty. Run Source first")
+            self.core.mapper = None
+            return
+        self.updater = Thread(target=self.update_realtime, args=('mapper',))
+        self.clock_speed_inlet = VQHInlet(self.core.mapper, 'clock_speed')
+        self.scale_inlet = VQHInlet(self.core.mapper.synthesizer.scale, 'current_scale')
+        self.outlet.connect(self.clock_speed_inlet)
+        self.outlet.connect(self.scale_inlet)
+
+        #Update Mapper inlets
+        self.core.mapper.thread2.start()
+        self.updater.start()
+
     def reset_outlet(self):
         print("Resetting Outlet")
         self.outlet.reset()
@@ -376,6 +435,10 @@ class VQHController:
         self.core.mapper.is_done = True
         sleep(1)
         self.is_active = False
+        if self.core.osc_controller:
+            self.core.osc_controller.stop()
+        if self.core.rt_seg_osc_controller:
+            self.core.rt_seg_osc_controller.stop()
         #self.waiter.join()
         #self.updater.join()
 
@@ -388,3 +451,57 @@ class VQHController:
             print("Synth does not have freeall function, or is not initialized yet")
 
 
+    def show_qubo_status(self):
+        """Show current QUBO problem status"""
+        if not self.core.source or not hasattr(self.core.source.strategy, 'problem'):
+            print("No QUBO problem loaded yet. Run 'init' first.")
+            return
+        
+        problem = self.core.source.strategy.problem
+        info = problem.get_info()
+        
+        print("\n" + "="*50)
+        print("QUBO STATUS")
+        print("="*50)
+        for key, value in info.items():
+            print(f"  {key}: {value}")
+        print("="*50 + "\n")
+    
+    def save_current_qubo(self, filename=None):
+        """Save current QUBO to file"""
+        if not self.core.source or not hasattr(self.core.source.strategy, 'problem'):
+            print("No QUBO problem loaded yet. Run 'init' first.")
+            return
+        
+        if filename is None:
+            filename = f"qubo_snapshot_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+        
+        problem = self.core.source.strategy.problem
+        problem.save_current_to_csv(filename)
+        print(f"Saved current QUBO to {filename}")
+    
+    def reload_qubo(self):
+        """Reload QUBO from original file"""
+        if not self.core.source or not hasattr(self.core.source.strategy, 'problem'):
+            print("No QUBO problem loaded yet. Run 'init' first.")
+            return
+        
+        problem = self.core.source.strategy.problem
+        original_file = problem.filename
+        print(f"Reloading QUBO from {original_file}...")
+        problem.load_data(original_file)
+        print("QUBO reloaded")
+    
+    def load_qubo_file(self, filename):
+        """Load QUBO from a specific file"""
+        if not self.core.source or not hasattr(self.core.source.strategy, 'problem'):
+            print("No QUBO problem loaded yet. Run 'init' first.")
+            return
+        
+        problem = self.core.source.strategy.problem
+        print(f"Loading QUBO from {filename}...")
+        try:
+            problem.load_from_csv(filename)
+            print(f"Successfully loaded QUBO from {filename}")
+        except Exception as e:
+            print(f"Error loading {filename}: {e}")

@@ -15,6 +15,7 @@ class VQHMapper:
     def __init__(self, strategy, synthesizer, queue, clock_speed: int=2, timeout: int=1) -> None:
         self.queue = queue
         self.thread = Thread(target=self.run_mapper)
+        self.thread2 = Thread(target=self.run_mapper2)
         self.clock_lock = Lock()
         self.strategy = strategy
         self.synthesizer = synthesizer
@@ -55,6 +56,20 @@ class VQHMapper:
             self.synthesizer.map_data(self.strategy, iteration)
             
             sleep(self.clock_speed)
+
+    def run_mapper2(self) -> None:
+        print("Mapper2 started")
+
+        iterations = []
+        # Dump all data from the queue
+        while not self.queue.empty():
+            iterations.append(self.queue.get())
+
+        if self.strategy in ["post_book"]:
+            self.synthesizer.map_data(self.strategy, iterations)
+        else:
+            print("Invalid mapping strategy. Use 'map' instead of 'map2'.")
+        self.is_done = True
 
 
     def stop(self) -> None:

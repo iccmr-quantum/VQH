@@ -54,7 +54,7 @@ last = False
 reset = True
 port = ''
 
-VALID_COMMANDS = ['q', 'quit', 'stop', 'map', 'mapfile', 'realtime', 'rt', 'init', 'source', 'queue', 'library']
+VALID_COMMANDS = ['q', 'quit', 'stop', 'map', 'map2', 'mapfile', 'realtime', 'rt', 'init', 'source', 'queue', 'library', 'qubo']
 
 
 # Play sonification from a previously generated file
@@ -85,10 +85,12 @@ def list_active_threads():
         print(f"Thread Name: {thread.name}, Alive: {thread.is_alive()}")
 
 
-def CLI(vqh_core, vqh_controller):
+def CLI(vqh_core, vqh_controller, args):
     global progQuit, comp, last, reset, generated_quasi_dist, comp_events
     generated_quasi_dist = []
     
+    vqh_core.qubo_source = args.qubo_source
+    vqh_core.qubo_file = args.qubo_file
 
     # prompt preparation
     session = PromptSession()
@@ -136,11 +138,18 @@ def CLI(vqh_core, vqh_controller):
                 print(f'Sonification type: {vqh_core.son_type}: {vqh_core.sonification_library._library[vqh_core.son_type]["description"]} ({vqh_core.sonification_library._library[vqh_core.son_type]["interface"].upper()})')
                 print(f'Strategy type: {vqh_core.strategy_type}')
                 if vqh_core.strategy_type == 'process':
-                    print(f'Running JSON to CSV once...')
-                    try:
-                        json_to_csv('midi/qubo_control.json', 'h_setup_rt.csv')
-                    except Exception as e:
-                        print(f'Error converting JSON to CSV: {e}')
+                    if vqh_core.qubo_source == 'json':
+                        print(f'Running JSON to CSV conversion...')
+                        try:
+                            json_to_csv('midi/qubo_control.json', 'h_setup_rt.csv')
+                            pass
+                            
+                        except Exception as e:
+                            print(f'Error converting JSON to CSV: {e}')
+                    elif vqh_core.qubo_source == 'osc':
+                        print(f'Using OSC control for QUBO matrix.')
+                    elif vqh_core.qubo_source == 'csv':
+                        print(f'Using CSV file directly for QUBO matrix: {vqh_core.qubo_file}')
                 print(f'Method name: {vqh_core.method_name}')
                 vqh_controller.init_core()
 
@@ -165,6 +174,15 @@ def CLI(vqh_core, vqh_controller):
                     # Specifies a new mapping
                     vqh_controller.run_mapper(int(x[1]))
 
+            # Sonify the last generated result
+            elif x[0] == 'map2':
+                if len(x) == 1:
+                    # Uses the loaded preset
+                    vqh_controller.run_mapper2()
+                elif len(x) == 2:
+                    # Specifies a new mapping
+                    vqh_controller.run_mapper2(int(x[1]))
+
             elif x[0] == 'mapfile':
                 if len(x) == 2:
                     print('Mapping last generated file...')
@@ -186,6 +204,34 @@ def CLI(vqh_core, vqh_controller):
 
             elif x[0] == 'library':
                 vqh_controller.print_library()
+
+            elif x[0] == 'qubo':
+
+                if len(x) == 1:
+                    vqh_controller.show_qubo_status()
+                
+                elif len(x) >= 2:
+                    subcommand = x[1]
+
+                    if subcommand == 'info' or subcommand == '':
+                        vqh_controller.show_qubo_status()
+                    elif subcommand == 'save':
+                        if len(x) == 3:
+                            vqh_controller.save_current_qubo(x[2])
+                        else:
+                            vqh_controller.save_current_qubo()
+                    elif subcommand == 'load':
+                        if len(x) == 3:
+                            vqh_controller.load_qubo_file(x[2])
+                        else:
+                            print("Usage: qubo load <filename>")
+                    elif subcommand == 'reload':
+                        vqh_controller.reload_qubo()
+
+                    else:
+                        print(f'Unknown qubo subcommand: {x[1]}')
+                        print('Available subcommands: info, save, reload')
+                        print("Usage: qubo [info|save [filename]|load filename|reload]")
 
             else:
                 print(f'Not a valid input - {x}')
@@ -246,6 +292,8 @@ Internal VQH functions:\n\
     p.add_argument('mapping', type=int, nargs='?', default=5, help="Sonification routine. Default is 5 (Raw OSC).")
     p.add_argument('--config', type=str, help="Overwrites arguments above with a configuration '<name>.vqhpreset' file.")
     p.add_argument('--eco_mode', type=bool, default=False, help="Save The CPU File I/O planet! Uses less trees.")
+    p.add_argument('--qubo_source', type=str, default='csv', choices=['csv', 'json', 'osc'], help="Source for QUBO matrix: 'csv' (direct edit), 'json' (MIDI control), 'osc' (OSC control)")
+    p.add_argument('--qubo_file', type=str, default='h_setup_rt.csv', help="Path to QUBO CSV file when using 'csv' mode")
     args = p.parse_args()
 
     if args.config:
@@ -264,13 +312,14 @@ Internal VQH functions:\n\
     config.HW_INTERFACE = args.platform
 
     if args.exec_mode == 'file':
-        vqh_core = VQHCore('file', args.method, args.platform, args.mapping, args.exec_mode, args.sessionpath)
+        vqh_core = VQHCore('file', args.method, args.platform, args.mapping, args.exec_mode, args.sessionpath, args.qubo_source, args.qubo_file)
     else:
-        vqh_core = VQHCore('process', args.method, args.platform, args.mapping, args.exec_mode, args.sessionpath)
+        vqh_core = VQHCore('process', args.method, args.platform, args.mapping, args.exec_mode, args.sessionpath, args.qubo_source, args.qubo_file)
     vqh_controlller = VQHController(vqh_core)
 
     # Run CLI
     pquit = multiprocessing.Value('b', False)
+    args.eco_mode=False
     if not args.eco_mode:
         qubo_vis = multiprocessing.Process(target=update_qubo_visualization, args=(pquit,))
         qubo_vis.start()
@@ -290,7 +339,7 @@ Internal VQH functions:\n\
     print('=====================================================')
 
 
-    CLI(vqh_core, vqh_controlller)
+    CLI(vqh_core, vqh_controlller, args)
     pquit.value = True
     print('Exited VQH')
     list_active_threads()

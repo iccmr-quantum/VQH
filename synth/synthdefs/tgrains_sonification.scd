@@ -2,7 +2,10 @@ s.boot
 s.quit
 
 s.options.numOutputBusChannels = 4;
-s.scope(zoom:4)
+s.scohhpe(zoom:4)
+
+Platform.resourceDir
+Platform.
 
 ~viola = Buffer.read(s, Platform.resourceDir +/+ "sounds/a11wlk01.wav");
 ~viola = Buffer.read(s, "RS_SC_sounds/RJ_1_click_original.wav");
@@ -20,16 +23,26 @@ s.scope(zoom:4)
 ~viola = Buffer.read(s, "RS_SC_sounds/RJ_2_SR_Fold2Harmonic.wav");
 ~viola = Buffer.read(s, "RS_SC_sounds/RJ_2_SR_Fold2Harmonic.wav");
 ~viola = Buffer.read(s, "RS_SC_sounds/RJ_2_SR_Fold2Harmonic.wav");
+
+~viola = Buffer.read(s, Platform.resourceDir +/+"sounds/Bouz1.wav");
+~viola = Buffer.read(s, Platform.resourceDir +/+"sounds/Bouz2.wav");
+~viola = Buffer.read(s, Platform.resourceDir +/+"sounds/Bouz4.wav");
+~viola = Buffer.read(s, Platform.resourceDir +/+"sounds/Bouz5.wav");
+~viola = Buffer.read(s, Platform.resourceDir +/+"sounds/Bouz6.wav");
+~viola = Buffer.read(s, Platform.resourceDir +/+"sounds/Digenis_voice.wav");
+~viola = Buffer.read(s, "RS_SC_sounds/TTD/Bouz1.m4a");
+
+
 ~viola.play;
 
 //Test
-(SynthDef(\vqgrains, {|out=0, s0=1, s1=1, s2=1, s3=1|
-    var trate, dur, clk, pos, pan, sig;
+(SynthDef(\vqgrains, {|out=0, s0=1, s1=1, s2=1, s3=1, pos=0, ratemul=1|
+    var trate, dur, clk, pan, sig;
     //trate = MouseY.kr(8,120,1);
-    trate = 20;
-	dur = 12 / trate;
+    trate = 20*ratemul;
+	dur = 6 / trate;
 	clk = Impulse.kr([s0*trate, s1*trate, s2*trate, s3*trate]);
-    pos = MouseX.kr(0,BufDur.kr(~viola.bufnum)) + TRand.kr(0, 0.01, clk);
+    //pos = MouseY.kr(0,BufDur.kr(~viola.bufnum)) + TRand.kr(0, 0.01, clk);
     pan = WhiteNoise.kr(0.6);
     sig = TGrains.ar(4, clk, ~viola.bufnum, 1, pos, dur, pan, 0.3);
 
@@ -37,15 +50,16 @@ s.scope(zoom:4)
 }).store;
 )
 
-(SynthDef(\vqgrains, {|out=0, s0=1, s1=1, s2=1, s3=1, rate=1|
-    var trate, dur, clk, pos, pan, sig;
+(SynthDef(\vqgrains2, {|out=0, s0=1, s1=1, s2=1, s3=1, pos2=0, rate=1|
+    var trate, dur, clk, pan, sig, pos;
     //trate = MouseY.kr(8,120,1);
-    trate = rate;
-	dur = 12 / trate;
+    trate = 20*rate;
+	dur = 0.5;
 	// clk = Impulse.kr([trate, trate, trate, trate]);
-	clk = Impulse.kr([s0*trate, s1*trate, s2*trate, s3*trate]);
+	clk = Impulse.kr([4*s0*trate, 4*s1*trate, 4*s2*trate, 4*s3*trate]);
     //pos = MouseX.kr(0,BufDur.kr(~viola)) + TRand.kr(0, 0.01, clk);
-	pos = [s0, s1, s2, s3]*BufDur.kr(~viola.bufnum);
+	pos = [s0, s1, s2, s3]*BufDur.kr(~viola.bufnum) + pos2;
+	// pos = pos2 + TRand.kr(0, 0.08, clk);
 	pan = WhiteNoise.kr(0.6);
 	sig = TGrains.ar(4, clk, ~viola.bufnum, rate, pos, dur, pan, 0.3);
 	// sig = TGrains.ar(4, clk, ~viola.bufnum, 1, pos, dur, pan, 0.3);
@@ -73,7 +87,7 @@ s.scope(zoom:4)
 
 Buffer.freeAll
 
-x =Synth("vqgrains")
+x =Synth("vqgrains2")
 Slew
 
 x.set(\s0, 0.2)

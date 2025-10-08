@@ -103,6 +103,9 @@ class VQHProcess:
         #sleep(2)
         self.handler = iteration_handler
 
+        if hasattr(self.problem, 'lock_updates'):
+            self.problem.lock_updates(True)
+
         count = 0
         
         for c in range(1):
@@ -124,6 +127,8 @@ class VQHProcess:
 
 
 
+        if hasattr(self.problem, 'lock_updates'):
+            self.problem.lock_updates(False)
         #raise NotImplementedError
         #needs to send sentinel to queue?
 
@@ -139,6 +144,11 @@ class VQHProcess:
 
             print(f'Next Segment: #{count}')
             self.busy = True
+
+            if hasattr(self.problem, 'apply_pending_updates'):
+                self.problem.apply_pending_updates()
+                print('Applied pending updates to QUBO.')
+
             with open(self.statuspath, 'w') as f:
                 json.dump({'busy': self.busy}, f)
 
