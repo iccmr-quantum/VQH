@@ -1,12 +1,13 @@
-import os
+from qiskit_aer import AerSimulator
 import numpy as np
 import copy
 import config
 import json
-
+from qiskit.primitives import Estimator, Sampler
 from vqe.vqe_experiments import SamplingVQE
 from qiskit.circuit.library import EfficientSU2
 from qiskit_algorithms.optimizers import COBYLA, NFT, SPSA, TNC, SLSQP, ADAM
+from qiskit import transpile
 
 from threading import Lock
 
@@ -94,4 +95,54 @@ class VQEAlgorithm:
 
 
 
+    def run_sampling_only(self, current_point, shots=1024, **algorithm_params):
+        """Run sampling experiment using given parameters without optimization"""
+        
+        print(f"Running sampling experiment with {shots} shots...")
+        
+        ansatz = algorithm_params['ansatz']
+        operator = algorithm_params['operator']
+        
+        # Setup sampler and estimator
+        estimator = Estimator(options = {'backend': config.PLATFORM.backend, 'shots': shots})
 
+
+        # Run estimation
+        ansatz_temp = copy.deepcopy(ansatz)
+        result_estimator = estimator.run(ansatz_temp, operator, parameter_values=current_point).result()
+        expectation_value = np.real(result_estimator.values[0])
+        
+        # Run sampling
+        ansatz_temp = copy.deepcopy(ansatz)
+        ansatz_temp.assign_parameters(current_point, inplace=True)
+        ansatz_temp.measure_all()
+
+        simulator = AerSimulator()
+        ansatz_temp = transpile(ansatz_temp, simulator)
+
+        result = simulator.run(ansatz_temp, shots=shots, memory=True).result()
+
+
+        sample_binary_probabilities = {bitstring: count/shots for bitstring, count in result.get_counts().items()}
+        
+        print(f"Sample result Counts: {result.get_counts()}")
+        memory = result.get_memory()
+        # Create results dictionary
+        sampling_results = {
+            'expectation_value': expectation_value,
+            'binary_probabilities': sample_binary_probabilities,
+            'current_point': current_point.tolist(),
+            'shot_memory': memory,
+            'shots': shots,
+            'num_qubits': ansatz.num_qubits
+        }
+        
+        # Save to file
+        sampling_filename = 'sampling_experiment.json'
+        with open(sampling_filename, 'w') as f:
+            json.dump(sampling_results, f, indent=4)
+        
+        print(f"Sampling results saved to {sampling_filename}")
+        print(f"Expectation value: {expectation_value}")
+        
+        return sampling_results

@@ -505,3 +505,27 @@ class VQHController:
             print(f"Successfully loaded QUBO from {filename}")
         except Exception as e:
             print(f"Error loading {filename}: {e}")
+
+    def run_sampling(self, shots=1024):
+
+        if not self.core.source or not hasattr(self.core.source.strategy, 'trigger_sampling'):
+            print('No sampling-capable source available or not in segmented mode')
+            return None
+
+        if self.core.source.strategy.type != 'process':
+            print('Sampling only available in process strategy')
+            return None
+
+        try:
+            results = self.core.source.strategy.trigger_sampling(shots=shots)
+            if results:
+                print(f"Sampling successful. check sampling_experiment.json")
+            return results
+        except Exception as e:
+            print(f"Error during sampling: {e}")
+            return None
+        
+
+
+
+

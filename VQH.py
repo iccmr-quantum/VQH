@@ -54,7 +54,7 @@ last = False
 reset = True
 port = ''
 
-VALID_COMMANDS = ['q', 'quit', 'stop', 'map', 'map2', 'mapfile', 'realtime', 'rt', 'init', 'source', 'queue', 'library', 'qubo']
+VALID_COMMANDS = ['q', 'quit', 'stop', 'map', 'map2', 'mapfile', 'realtime', 'rt', 'init', 'i', 'source', 'queue', 'library', 'qubo', 'sample']
 
 
 # Play sonification from a previously generated file
@@ -120,7 +120,7 @@ def CLI(vqh_core, vqh_controller, args):
                 print('')
                 vqh_controller.start()
 
-            elif x[0] == 'init':
+            elif x[0] == 'init' or x[0] == 'i':
                 print(' Setting up VQH realtime session...')
                 print(f' Son:{type(vqh_core.son_type)}')
                 if len(x) >= 2:
@@ -233,6 +233,11 @@ def CLI(vqh_core, vqh_controller, args):
                         print('Available subcommands: info, save, reload')
                         print("Usage: qubo [info|save [filename]|load filename|reload]")
 
+            elif x[0] == 'sample':
+                if len(x) == 1:
+                    vqh_controller.run_sampling()
+                elif len(x) == 2:
+                    vqh_controller.run_sampling(shots=int(x[1]))
             else:
                 print(f'Not a valid input - {x}')
 

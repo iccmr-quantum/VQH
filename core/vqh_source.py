@@ -84,6 +84,8 @@ class VQHProcess:
         self.file_manager = filem
         self.statuspath = 'source_status.json'
         self.busy = False
+        self.latest_current_point = None
+        self.latest_algorithm_params = None
 
         self._active = True
 
@@ -159,6 +161,9 @@ class VQHProcess:
             # Run the algorithm
             current_point = self.algorithm.run_algorithm(current_point, self.handler, **algorithm_params)
 
+            self.latest_current_point = current_point.copy()
+            self.latest_algorithm_params = algorithm_params.copy()
+
             print(f'Writing Data Set to File...')
             self.file_manager.write(self.dataset)
 
@@ -193,6 +198,12 @@ class VQHProcess:
             print('Invalid RT Mode! Choose a valid mode [0, 1, 2] during startup. Exiting...')
             sleep(1)
             raise ValueError
+    def trigger_sampling(self, shots=1024):
+        if self.latest_algorithm_params is None or self.latest_current_point is None:
+            print('No previous sampling data available.')
+            return None
+        print("Triggering sampling experiment in current point...")
+        return self.algorithm.run_sampling_only(self.latest_current_point, shots, **self.latest_algorithm_params)
 
 class VQHSource:
     def __init__(self, strategy: VQHSourceStrategy, queue: Queue) -> None:
